@@ -8,6 +8,12 @@
     let { data, form }: { data: PageData; form: ActionData } = $props();
     const jenisKegiatan = $derived(data.jenisKegiatan as JenisKegiatan[]);
 
+    let bidangFilter = $state('');
+    const filteredJenisKegiatan = $derived.by(() => {
+        if (!bidangFilter) return jenisKegiatan;
+        return jenisKegiatan.filter(jk => jk.idBidang === bidangFilter);
+    });
+
     let showCreate = $state(false);
     let editItem = $state<JenisKegiatan | null>(null);
     let loading = $state(false);
@@ -57,8 +63,23 @@
         </div>
     {/if}
 
+    <!-- FILTER BIDANG -->
+    <div class="flex items-center gap-3 bg-white px-4 py-3 rounded-2xl border border-zinc-100 shadow-sm max-w-sm">
+        <label for="bidangFilter" class="text-xs font-bold text-zinc-500 uppercase tracking-widest shrink-0">Filter Bidang:</label>
+        <select
+            id="bidangFilter"
+            bind:value={bidangFilter}
+            class="w-full px-3 py-1.5 bg-zinc-50 border border-zinc-200 rounded-xl text-xs font-bold text-zinc-700 outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all cursor-pointer"
+        >
+            <option value="">-- Semua Bidang --</option>
+            {#each (data.bidangList ?? []) as b}
+                <option value={b.idBidang}>{b.namaBidang}</option>
+            {/each}
+        </select>
+    </div>
+
     <div class="overflow-x-auto rounded-[2rem] border border-zinc-100 bg-white shadow-sm mt-4">
-        {#if jenisKegiatan.length === 0}
+        {#if filteredJenisKegiatan.length === 0}
             <div class="p-16 text-center flex flex-col items-center justify-center bg-zinc-50/50">
                 <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center text-zinc-300 border border-zinc-200 mb-4">
                     <FileText class="w-8 h-8" />
@@ -77,7 +98,7 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-zinc-50 bg-white">
-                    {#each jenisKegiatan as jk, i}
+                    {#each filteredJenisKegiatan as jk, i}
                         <tr class="hover:bg-zinc-50/80 transition-colors group">
                             <td class="px-6 py-4 text-sm font-bold font-mono text-zinc-400">{i + 1}</td>
                             <td class="px-6 py-4 text-sm font-bold text-zinc-900">{jk.namaKegiatan}</td>

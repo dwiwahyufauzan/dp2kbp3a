@@ -1,4 +1,4 @@
-﻿<script lang="ts">
+<script lang="ts">
     import { goto } from '$app/navigation';
     import StatusBadge from '$lib/components/StatusBadge.svelte';
     import type { PageData } from './$types';
@@ -11,11 +11,30 @@
 
     let searchInput = $state(data.search ?? '');
     let statusFilter = $state(data.status ?? '');
+    let idBidangFilter = $state(data.idBidang ?? '');
+    let idJenisFilter = $state(data.idJenis ?? '');
+
+    const filteredKegiatanOptions = $derived.by(() => {
+        const allKegiatan = data.jenisKegiatan ?? [];
+        if (!idBidangFilter) return allKegiatan;
+        return allKegiatan.filter(k => k.idBidang === idBidangFilter);
+    });
+
+    $effect(() => {
+        if (idBidangFilter) {
+            const hasMatch = filteredKegiatanOptions.some(k => k.idJenis === idJenisFilter);
+            if (!hasMatch) {
+                idJenisFilter = '';
+            }
+        }
+    });
 
     function applyFilter() {
         const params = new URLSearchParams();
         if (statusFilter) params.set('status', statusFilter);
         if (searchInput.trim()) params.set('search', searchInput.trim());
+        if (idBidangFilter) params.set('idBidang', idBidangFilter);
+        if (idJenisFilter) params.set('idJenis', idJenisFilter);
         params.set('page', '1');
         goto(`/laporan?${params.toString()}`);
     }
@@ -24,6 +43,8 @@
         const params = new URLSearchParams();
         if (data.status) params.set('status', data.status);
         if (data.search) params.set('search', data.search);
+        if (data.idBidang) params.set('idBidang', data.idBidang);
+        if (data.idJenis) params.set('idJenis', data.idJenis);
         params.set('page', String(p));
         goto(`/laporan?${params.toString()}`);
     }
@@ -60,43 +81,67 @@
     </header>
 
     <!-- FILTER -->
-    <div class="flex flex-col sm:flex-row gap-3 py-4">
-        <div class="relative flex-1">
-            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400">
-                <Search class="w-4 h-4" />
+    <div class="space-y-3 py-4">
+        <div class="flex flex-col sm:flex-row gap-3">
+            <div class="relative flex-1">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400">
+                    <Search class="w-4 h-4" />
+                </div>
+                <input
+                    type="text"
+                    placeholder="Cari lokasi, deskripsi..."
+                    bind:value={searchInput}
+                    onkeydown={(e) => e.key === 'Enter' && applyFilter()}
+                    class="w-full pl-10 {searchInput ? 'pr-9' : 'pr-4'} py-2.5 bg-zinc-50/50 border border-zinc-200 rounded-xl text-sm outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all font-medium text-zinc-800 placeholder:text-zinc-400"
+                />
+                {#if searchInput}
+                    <button
+                        type="button"
+                        onclick={() => { searchInput = ''; applyFilter(); }}
+                        class="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-400 hover:text-zinc-700 transition-colors"
+                        aria-label="Hapus pencarian"
+                    >
+                        <X class="w-3.5 h-3.5" />
+                    </button>
+                {/if}
             </div>
-            <input
-                type="text"
-                placeholder="Cari kegiatan, lokasi, petugas..."
-                bind:value={searchInput}
-                onkeydown={(e) => e.key === 'Enter' && applyFilter()}
-                class="w-full pl-10 {searchInput ? 'pr-9' : 'pr-4'} py-2.5 bg-zinc-50/50 border border-zinc-200 rounded-xl text-sm outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all font-medium text-zinc-800 placeholder:text-zinc-400"
-            />
-            {#if searchInput}
-                <button
-                    type="button"
-                    onclick={() => { searchInput = ''; applyFilter(); }}
-                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-400 hover:text-zinc-700 transition-colors"
-                    aria-label="Hapus pencarian"
-                >
-                    <X class="w-3.5 h-3.5" />
-                </button>
-            {/if}
+            <select
+                bind:value={statusFilter}
+                class="px-4 py-2.5 bg-zinc-50/50 border border-zinc-200 rounded-xl text-sm font-medium text-zinc-700 outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all cursor-pointer min-w-[160px]"
+            >
+                {#each statusOptions as opt}
+                    <option value={opt}>{opt || 'Semua Status'}</option>
+                {/each}
+            </select>
         </div>
-        <select
-            bind:value={statusFilter}
-            class="px-4 py-2.5 bg-zinc-50/50 border border-zinc-200 rounded-xl text-sm font-medium text-zinc-700 outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all cursor-pointer min-w-[160px]"
-        >
-            {#each statusOptions as opt}
-                <option value={opt}>{opt || 'Semua Status'}</option>
-            {/each}
-        </select>
-        <button
-            onclick={applyFilter}
-            class="px-6 py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-sm font-bold rounded-xl transition-colors whitespace-nowrap flex items-center justify-center gap-2"
-        >
-            <Filter class="w-4 h-4" /> Filter
-        </button>
+
+        <div class="flex flex-col sm:flex-row gap-3">
+            <select
+                bind:value={idBidangFilter}
+                class="flex-1 px-4 py-2.5 bg-zinc-50/50 border border-zinc-200 rounded-xl text-sm font-medium text-zinc-700 outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all cursor-pointer"
+            >
+                <option value="">-- Semua Bidang --</option>
+                {#each (data.bidangList ?? []) as b}
+                    <option value={b.idBidang}>{b.namaBidang}</option>
+                {/each}
+            </select>
+            <select
+                bind:value={idJenisFilter}
+                disabled={!!idBidangFilter && filteredKegiatanOptions.length === 0}
+                class="flex-1 px-4 py-2.5 bg-zinc-50/50 border border-zinc-200 rounded-xl text-sm font-medium text-zinc-700 outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all cursor-pointer disabled:opacity-50"
+            >
+                <option value="">-- Semua Kegiatan --</option>
+                {#each filteredKegiatanOptions as opt}
+                    <option value={opt.idJenis}>{opt.namaKegiatan}</option>
+                {/each}
+            </select>
+            <button
+                onclick={applyFilter}
+                class="px-8 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-bold rounded-xl transition-colors whitespace-nowrap flex items-center justify-center gap-2"
+            >
+                <Filter class="w-4 h-4" /> Terapkan Filter
+            </button>
+        </div>
     </div>
 
     <!-- TABLE -->
@@ -115,6 +160,7 @@
                     <thead class="bg-zinc-50/50">
                         <tr>
                             <th class="px-6 py-4 text-left text-[10px] font-bold text-zinc-500 uppercase tracking-[0.1em]">Tanggal</th>
+                            <th class="px-6 py-4 text-left text-[10px] font-bold text-zinc-500 uppercase tracking-[0.1em]">Kegiatan & Bidang</th>
                             <th class="px-6 py-4 text-left text-[10px] font-bold text-zinc-500 uppercase tracking-[0.1em]">Petugas</th>
                             <th class="px-6 py-4 text-left text-[10px] font-bold text-zinc-500 uppercase tracking-[0.1em]">Status</th>
                             <th class="px-6 py-4 text-right text-[10px] font-bold text-zinc-500 uppercase tracking-[0.1em]">Aksi</th>
@@ -139,6 +185,10 @@
                                             {/if}
                                         </div>
                                     </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="text-xs font-bold text-zinc-850 block truncate max-w-[280px]">{item.namaKegiatan ?? '-'}</span>
+                                    <span class="text-[9px] text-zinc-400 font-medium block truncate max-w-[280px]">{item.namaBidang ?? 'Semua Bidang'}</span>
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="flex items-center gap-2">

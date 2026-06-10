@@ -65,10 +65,12 @@ export const laporanRoutes = new Elysia({ prefix: '/laporan' })
     const offset = (page - 1) * limit
     const status = query.status ?? ''
     const search = query.search ?? ''
-
+    const idBidang = query.idBidang ?? ''
+    const idJenis = query.idJenis ?? ''
+ 
     // Susun kondisi WHERE dinamis
     const conditions: SQL[] = []
-
+ 
     if (u.namaRole === 'petugas') {
       // Petugas: hanya lihat laporannya sendiri
       conditions.push(eq(laporanKegiatan.idUser, u.idUser))
@@ -79,14 +81,20 @@ export const laporanRoutes = new Elysia({ prefix: '/laporan' })
       }
     }
     // Admin & pimpinan: lihat semua
-
+ 
     if (status) {
       conditions.push(eq(laporanKegiatan.statusVerifikasi, status as 'Pending' | 'Disetujui' | 'Ditolak' | 'Revisi'))
     }
     if (search) {
       conditions.push(like(laporanKegiatan.lokasiDetail, `%${search}%`))
     }
-
+    if (idBidang) {
+      conditions.push(eq(laporanKegiatan.idBidang, idBidang))
+    }
+    if (idJenis) {
+      conditions.push(eq(laporanKegiatan.idJenis, idJenis))
+    }
+ 
     const where = conditions.length > 0 ? and(...conditions) : undefined
 
     const baseSelect = {
