@@ -6,7 +6,7 @@ import { jwt } from '@elysiajs/jwt'
 export const jwtPlugin = new Elysia({ name: 'jwt-plugin' }).use(
   jwt({
     name: 'jwt',
-    secret: Bun.env.JWT_SECRET ?? 'change-this-secret-in-production-min-32-chars',
+    secret: Bun.env.JWT_SECRET ?? 'dp2kbp3a-super-secret-key-ganti-sebelum-deploy-2026',
     exp: '8h',
   })
 )

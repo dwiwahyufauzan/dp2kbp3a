@@ -32,7 +32,8 @@ export const load: PageServerLoad = async ({ cookies, locals, url }) => {
 			total      = json.total ?? 0
 			totalPages = json.totalPages ?? 1
 		}
-	} catch {
+	} catch (err) {
+		console.error('[Loader Error] Gagal memuat data revisi:', err)
 		laporan = []
 	}
 

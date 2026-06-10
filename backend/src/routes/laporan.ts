@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia'
 import { eq, desc, count, and, like, SQL } from 'drizzle-orm'
 import { join } from 'node:path'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, unlink } from 'node:fs/promises'
 import { db } from '../db/connection'
 import { laporanKegiatan, users, jenisKegiatan, dokumentasiLaporan, notifikasi, roles, riwayatRevisi, bidang } from '../db/schema'
 import { authPlugin } from '../plugins/auth'
@@ -555,7 +555,7 @@ export const laporanRoutes = new Elysia({ prefix: '/laporan' })
     const u = (ctx as unknown as { user: UserPayload }).user
 
     const [dok] = await db
-      .select({ idLaporan: dokumentasiLaporan.idLaporan })
+      .select({ idLaporan: dokumentasiLaporan.idLaporan, filePath: dokumentasiLaporan.filePath })
       .from(dokumentasiLaporan)
       .where(eq(dokumentasiLaporan.idDokumentasi, params.idDok))
       .limit(1)
@@ -574,6 +574,11 @@ export const laporanRoutes = new Elysia({ prefix: '/laporan' })
     }
 
     await db.delete(dokumentasiLaporan).where(eq(dokumentasiLaporan.idDokumentasi, params.idDok))
+
+    try {
+      await unlink(join(UPLOAD_DIR, dok.filePath))
+    } catch { /* abaikan jika file tidak ada */ }
+
     return { message: 'Dokumentasi berhasil dihapus' }
   })
 
@@ -594,6 +599,18 @@ export const laporanRoutes = new Elysia({ prefix: '/laporan' })
       .limit(1)
 
     if (!existing) { set.status = 404; return { message: 'Laporan tidak ditemukan' } }
+
+    // Ambil list file dokumentasi sebelum data di-delete
+    const files = await db
+      .select({ filePath: dokumentasiLaporan.filePath })
+      .from(dokumentasiLaporan)
+      .where(eq(dokumentasiLaporan.idLaporan, params.id))
+
+    for (const file of files) {
+      try {
+        await unlink(join(UPLOAD_DIR, file.filePath))
+      } catch { /* abaikan jika file tidak ada */ }
+    }
 
     await db.delete(laporanKegiatan).where(eq(laporanKegiatan.idLaporan, params.id))
     const ip3 = ctx.request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined

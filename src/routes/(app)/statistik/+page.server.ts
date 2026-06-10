@@ -14,16 +14,19 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
 	if (bulan) params.set('bulan', bulan)
 	if (idBidang) params.set('idBidang', idBidang)
 
-	const [resStats, resBidang] = await Promise.all([
-		api.get(`/statistik?${params.toString()}`),
-		api.get('/admin/bidang')
-	])
-
 	let stats = { totalLaporan: 0, totalPeserta: 0, byStatus: {}, byJenis: [], trenBulan: [] }
 	let bidang: { idBidang: string; namaBidang: string }[] = []
 
-	if (resStats.ok) stats = await resStats.json()
-	if (resBidang.ok) bidang = await resBidang.json()
+	try {
+		const [resStats, resBidang] = await Promise.all([
+			api.get(`/statistik?${params.toString()}`),
+			api.get('/admin/bidang')
+		])
+		if (resStats.ok) stats = await resStats.json()
+		if (resBidang.ok) bidang = await resBidang.json()
+	} catch (err) {
+		console.error('[Loader Error] Gagal memuat data statistik:', err)
+	}
 
 	return { stats, bidang, tahun, bulan, idBidang }
 }

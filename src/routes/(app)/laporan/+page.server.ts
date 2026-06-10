@@ -42,7 +42,8 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
 		}
 		if (resBidang.ok) bidangList = await resBidang.json()
 		if (resJenis.ok) jenisKegiatan = await resJenis.json()
-	} catch {
+	} catch (err) {
+		console.error('[Loader Error] Gagal memuat data laporan:', err)
 		laporan = []
 	}
 
