@@ -1,4 +1,4 @@
-﻿import { Elysia, t } from 'elysia'
+import { Elysia, t } from 'elysia'
 import { eq, sql, inArray, desc } from 'drizzle-orm'
 import { db } from '../db/connection'
 import { laporanKegiatan, users, bidang, jenisKegiatan, dokumentasiLaporan } from '../db/schema'
@@ -22,7 +22,9 @@ export const rekapRoutes = new Elysia({ prefix: '/rekap' })
   // GET /rekap?periode=2026-05-15 (harian) atau 2026-05 (bulanan) atau 2026 (tahunan) & idBidang=xxx
   .get(
     '/',
-    async ({ query }) => {
+    async (ctx) => {
+      const query = ctx.query
+      const user = (ctx as unknown as { user: UserPayload }).user
       const conditions = []
 
       if (query.periode) {
@@ -35,8 +37,14 @@ export const rekapRoutes = new Elysia({ prefix: '/rekap' })
         }
       }
 
-      if (query.idBidang) {
-        conditions.push(eq(users.idBidang, query.idBidang))
+      if (user.namaRole === 'kepala_bidang') {
+        if (user.idBidang) {
+          conditions.push(eq(laporanKegiatan.idBidang, user.idBidang))
+        } else {
+          conditions.push(eq(laporanKegiatan.idBidang, ''))
+        }
+      } else if (query.idBidang) {
+        conditions.push(eq(laporanKegiatan.idBidang, query.idBidang))
       }
 
       if (query.idUser) {
@@ -82,7 +90,9 @@ export const rekapRoutes = new Elysia({ prefix: '/rekap' })
   // GET /rekap/export-detail — full laporan data for export (with dokumentasi)
   .get(
     '/export-detail',
-    async ({ query }) => {
+    async (ctx) => {
+      const query = ctx.query
+      const user = (ctx as unknown as { user: UserPayload }).user
       const conditions = []
 
       if (query.periode) {
@@ -95,8 +105,14 @@ export const rekapRoutes = new Elysia({ prefix: '/rekap' })
         }
       }
 
-      if (query.idBidang) {
-        conditions.push(eq(users.idBidang, query.idBidang))
+      if (user.namaRole === 'kepala_bidang') {
+        if (user.idBidang) {
+          conditions.push(eq(laporanKegiatan.idBidang, user.idBidang))
+        } else {
+          conditions.push(eq(laporanKegiatan.idBidang, ''))
+        }
+      } else if (query.idBidang) {
+        conditions.push(eq(laporanKegiatan.idBidang, query.idBidang))
       }
 
       const whereClause =

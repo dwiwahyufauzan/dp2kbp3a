@@ -22,7 +22,9 @@ export const statistikRoutes = new Elysia({ prefix: '/statistik' })
   // GET /statistik?tahun=2026&bulan=5&idBidang=xxx
   .get(
     '/',
-    async ({ query }) => {
+    async (ctx) => {
+      const query = ctx.query
+      const user = (ctx as unknown as { user: UserPayload }).user
       const conditions: ReturnType<typeof sql>[] = []
 
       if (query.tahun) {
@@ -31,8 +33,15 @@ export const statistikRoutes = new Elysia({ prefix: '/statistik' })
       if (query.bulan) {
         conditions.push(sql`MONTH(${laporanKegiatan.tanggalKegiatan}) = ${Number(query.bulan)}`)
       }
-      if (query.idBidang) {
-        conditions.push(eq(users.idBidang, query.idBidang))
+      
+      if (user.namaRole === 'kepala_bidang') {
+        if (user.idBidang) {
+          conditions.push(eq(laporanKegiatan.idBidang, user.idBidang))
+        } else {
+          conditions.push(eq(laporanKegiatan.idBidang, ''))
+        }
+      } else if (query.idBidang) {
+        conditions.push(eq(laporanKegiatan.idBidang, query.idBidang))
       }
 
       const whereClause =
@@ -78,9 +87,17 @@ export const statistikRoutes = new Elysia({ prefix: '/statistik' })
       const trenConditions: ReturnType<typeof sql>[] = []
       const yearToUse = query.tahun ? Number(query.tahun) : new Date().getFullYear()
       trenConditions.push(sql`YEAR(${laporanKegiatan.tanggalKegiatan}) = ${yearToUse}`)
-      if (query.idBidang) {
-        trenConditions.push(eq(users.idBidang, query.idBidang))
+      
+      if (user.namaRole === 'kepala_bidang') {
+        if (user.idBidang) {
+          trenConditions.push(eq(laporanKegiatan.idBidang, user.idBidang))
+        } else {
+          trenConditions.push(eq(laporanKegiatan.idBidang, ''))
+        }
+      } else if (query.idBidang) {
+        trenConditions.push(eq(laporanKegiatan.idBidang, query.idBidang))
       }
+
       const trenWhere = trenConditions.reduce((acc, cond) => sql`${acc} AND ${cond}`)
 
       const trenBulanRaw = await db

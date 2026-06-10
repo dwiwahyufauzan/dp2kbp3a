@@ -26,7 +26,14 @@ export const verifikasiRoutes = new Elysia({ prefix: '/verifikasi' })
     const conditions = [eq(laporanKegiatan.statusVerifikasi, 'Pending')]
 
     // Kepala bidang hanya lihat laporan dari bidangnya
-    // (dibatasi via join ke users.idBidang jika kepala_bidang punya idBidang)
+    if (u.namaRole === 'kepala_bidang') {
+      if (u.idBidang) {
+        conditions.push(eq(laporanKegiatan.idBidang, u.idBidang))
+      } else {
+        conditions.push(eq(laporanKegiatan.idBidang, ''))
+      }
+    }
+
     const rows = await db
       .select({
         idLaporan: laporanKegiatan.idLaporan,
@@ -73,7 +80,12 @@ export const verifikasiRoutes = new Elysia({ prefix: '/verifikasi' })
     }
 
     const [laporan] = await db
-      .select({ idLaporan: laporanKegiatan.idLaporan, idUser: laporanKegiatan.idUser, namaKegiatan: jenisKegiatan.namaKegiatan })
+      .select({ 
+        idLaporan: laporanKegiatan.idLaporan, 
+        idUser: laporanKegiatan.idUser, 
+        idBidang: laporanKegiatan.idBidang,
+        namaKegiatan: jenisKegiatan.namaKegiatan 
+      })
       .from(laporanKegiatan)
       .leftJoin(jenisKegiatan, eq(laporanKegiatan.idJenis, jenisKegiatan.idJenis))
       .where(eq(laporanKegiatan.idLaporan, params.id))
@@ -82,6 +94,11 @@ export const verifikasiRoutes = new Elysia({ prefix: '/verifikasi' })
     if (!laporan) {
       set.status = 404
       return { message: 'Laporan tidak ditemukan' }
+    }
+
+    if (u.namaRole === 'kepala_bidang' && (!u.idBidang || laporan.idBidang !== u.idBidang)) {
+      set.status = 403
+      return { message: 'Akses ditolak: Anda hanya dapat memverifikasi laporan di bidang Anda' }
     }
 
     // Update status

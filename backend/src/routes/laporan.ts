@@ -44,8 +44,12 @@ export const laporanRoutes = new Elysia({ prefix: '/laporan' })
 
     const conditions: SQL[] = [eq(laporanKegiatan.statusVerifikasi, 'Pending')]
     // Kepala bidang: hanya hitung pending di bidangnya
-    if (u.namaRole === 'kepala_bidang' && u.idBidang) {
-      conditions.push(eq(laporanKegiatan.idBidang, u.idBidang))
+    if (u.namaRole === 'kepala_bidang') {
+      if (u.idBidang) {
+        conditions.push(eq(laporanKegiatan.idBidang, u.idBidang))
+      } else {
+        conditions.push(eq(laporanKegiatan.idBidang, ''))
+      }
     }
 
     const [result] = await db
@@ -78,6 +82,8 @@ export const laporanRoutes = new Elysia({ prefix: '/laporan' })
       // Kepala bidang: hanya lihat laporan yang dibuat di bidangnya
       if (u.idBidang) {
         conditions.push(eq(laporanKegiatan.idBidang, u.idBidang))
+      } else {
+        conditions.push(eq(laporanKegiatan.idBidang, ''))
       }
     }
     // Admin & pimpinan: lihat semua
@@ -184,7 +190,7 @@ export const laporanRoutes = new Elysia({ prefix: '/laporan' })
       return { message: 'Akses ditolak' }
     }
     // Kepala bidang: hanya boleh lihat laporan di bidangnya
-    if (u.namaRole === 'kepala_bidang' && u.idBidang && row.idBidang !== u.idBidang) {
+    if (u.namaRole === 'kepala_bidang' && (!u.idBidang || row.idBidang !== u.idBidang)) {
       set.status = 403
       return { message: 'Akses ditolak' }
     }
