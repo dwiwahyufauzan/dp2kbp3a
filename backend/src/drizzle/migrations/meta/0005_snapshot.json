@@ -1,0 +1,704 @@
+{
+  "version": "5",
+  "dialect": "mysql",
+  "id": "4e62f52c-4147-46b6-a1fb-75f68d8c9f4f",
+  "prevId": "290e4f3c-2c9d-4264-b50f-d106fff2c11e",
+  "tables": {
+    "bidang": {
+      "name": "bidang",
+      "columns": {
+        "id_bidang": {
+          "name": "id_bidang",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "nama_bidang": {
+          "name": "nama_bidang",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "deskripsi": {
+          "name": "deskripsi",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "bidang_id_bidang": {
+          "name": "bidang_id_bidang",
+          "columns": [
+            "id_bidang"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "dokumentasi_laporan": {
+      "name": "dokumentasi_laporan",
+      "columns": {
+        "id_dokumentasi": {
+          "name": "id_dokumentasi",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id_laporan": {
+          "name": "id_laporan",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "file_path": {
+          "name": "file_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "tipe_file": {
+          "name": "tipe_file",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "dokumentasi_laporan_id_laporan_laporan_kegiatan_id_laporan_fk": {
+          "name": "dokumentasi_laporan_id_laporan_laporan_kegiatan_id_laporan_fk",
+          "tableFrom": "dokumentasi_laporan",
+          "tableTo": "laporan_kegiatan",
+          "columnsFrom": [
+            "id_laporan"
+          ],
+          "columnsTo": [
+            "id_laporan"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "dokumentasi_laporan_id_dokumentasi": {
+          "name": "dokumentasi_laporan_id_dokumentasi",
+          "columns": [
+            "id_dokumentasi"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "jenis_kegiatan": {
+      "name": "jenis_kegiatan",
+      "columns": {
+        "id_jenis": {
+          "name": "id_jenis",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "nama_kegiatan": {
+          "name": "nama_kegiatan",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "jenis_kegiatan_id_jenis": {
+          "name": "jenis_kegiatan_id_jenis",
+          "columns": [
+            "id_jenis"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "laporan_kegiatan": {
+      "name": "laporan_kegiatan",
+      "columns": {
+        "id_laporan": {
+          "name": "id_laporan",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id_user": {
+          "name": "id_user",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id_jenis": {
+          "name": "id_jenis",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "tanggal_kegiatan": {
+          "name": "tanggal_kegiatan",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "lokasi_detail": {
+          "name": "lokasi_detail",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "jumlah_peserta": {
+          "name": "jumlah_peserta",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "jumlah_laki": {
+          "name": "jumlah_laki",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "jumlah_perempuan": {
+          "name": "jumlah_perempuan",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "deskripsi_kegiatan": {
+          "name": "deskripsi_kegiatan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status_verifikasi": {
+          "name": "status_verifikasi",
+          "type": "enum('Pending','Disetujui','Ditolak','Revisi')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'Pending'"
+        },
+        "catatan_verifikator": {
+          "name": "catatan_verifikator",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "id_verifikator": {
+          "name": "id_verifikator",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "(now())"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
+        }
+      },
+      "indexes": {
+        "idx_id_user": {
+          "name": "idx_id_user",
+          "columns": [
+            "id_user"
+          ],
+          "isUnique": false
+        },
+        "idx_tanggal": {
+          "name": "idx_tanggal",
+          "columns": [
+            "tanggal_kegiatan"
+          ],
+          "isUnique": false
+        },
+        "idx_status": {
+          "name": "idx_status",
+          "columns": [
+            "status_verifikasi"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "laporan_kegiatan_id_user_users_id_user_fk": {
+          "name": "laporan_kegiatan_id_user_users_id_user_fk",
+          "tableFrom": "laporan_kegiatan",
+          "tableTo": "users",
+          "columnsFrom": [
+            "id_user"
+          ],
+          "columnsTo": [
+            "id_user"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "laporan_kegiatan_id_jenis_jenis_kegiatan_id_jenis_fk": {
+          "name": "laporan_kegiatan_id_jenis_jenis_kegiatan_id_jenis_fk",
+          "tableFrom": "laporan_kegiatan",
+          "tableTo": "jenis_kegiatan",
+          "columnsFrom": [
+            "id_jenis"
+          ],
+          "columnsTo": [
+            "id_jenis"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "laporan_kegiatan_id_verifikator_users_id_user_fk": {
+          "name": "laporan_kegiatan_id_verifikator_users_id_user_fk",
+          "tableFrom": "laporan_kegiatan",
+          "tableTo": "users",
+          "columnsFrom": [
+            "id_verifikator"
+          ],
+          "columnsTo": [
+            "id_user"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "laporan_kegiatan_id_laporan": {
+          "name": "laporan_kegiatan_id_laporan",
+          "columns": [
+            "id_laporan"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "log_aktivitas": {
+      "name": "log_aktivitas",
+      "columns": {
+        "id_log": {
+          "name": "id_log",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id_user": {
+          "name": "id_user",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "aksi": {
+          "name": "aksi",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "keterangan": {
+          "name": "keterangan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "ip_address": {
+          "name": "ip_address",
+          "type": "varchar(45)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "(now())"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "log_aktivitas_id_user_users_id_user_fk": {
+          "name": "log_aktivitas_id_user_users_id_user_fk",
+          "tableFrom": "log_aktivitas",
+          "tableTo": "users",
+          "columnsFrom": [
+            "id_user"
+          ],
+          "columnsTo": [
+            "id_user"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "log_aktivitas_id_log": {
+          "name": "log_aktivitas_id_log",
+          "columns": [
+            "id_log"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "lokasi_tugas": {
+      "name": "lokasi_tugas",
+      "columns": {
+        "id_lokasi": {
+          "name": "id_lokasi",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "nama_kecamatan": {
+          "name": "nama_kecamatan",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "nama_desa_kelurahan": {
+          "name": "nama_desa_kelurahan",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "lokasi_tugas_id_lokasi": {
+          "name": "lokasi_tugas_id_lokasi",
+          "columns": [
+            "id_lokasi"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "notifikasi": {
+      "name": "notifikasi",
+      "columns": {
+        "id_notif": {
+          "name": "id_notif",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id_user_penerima": {
+          "name": "id_user_penerima",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "judul": {
+          "name": "judul",
+          "type": "varchar(150)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "pesan": {
+          "name": "pesan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "tipe": {
+          "name": "tipe",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id_referensi": {
+          "name": "id_referensi",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "is_read": {
+          "name": "is_read",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "(now())"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "notifikasi_id_user_penerima_users_id_user_fk": {
+          "name": "notifikasi_id_user_penerima_users_id_user_fk",
+          "tableFrom": "notifikasi",
+          "tableTo": "users",
+          "columnsFrom": [
+            "id_user_penerima"
+          ],
+          "columnsTo": [
+            "id_user"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "notifikasi_id_notif": {
+          "name": "notifikasi_id_notif",
+          "columns": [
+            "id_notif"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "roles": {
+      "name": "roles",
+      "columns": {
+        "id_role": {
+          "name": "id_role",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "nama_role": {
+          "name": "nama_role",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "roles_id_role": {
+          "name": "roles_id_role",
+          "columns": [
+            "id_role"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "roles_nama_role_unique": {
+          "name": "roles_nama_role_unique",
+          "columns": [
+            "nama_role"
+          ]
+        }
+      },
+      "checkConstraint": {}
+    },
+    "users": {
+      "name": "users",
+      "columns": {
+        "id_user": {
+          "name": "id_user",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id_role": {
+          "name": "id_role",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id_bidang": {
+          "name": "id_bidang",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "id_lokasi": {
+          "name": "id_lokasi",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "nama_lengkap": {
+          "name": "nama_lengkap",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(150)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "password": {
+          "name": "password",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status_aktif": {
+          "name": "status_aktif",
+          "type": "enum('y','n')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'y'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "(now())"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "users_id_role_roles_id_role_fk": {
+          "name": "users_id_role_roles_id_role_fk",
+          "tableFrom": "users",
+          "tableTo": "roles",
+          "columnsFrom": [
+            "id_role"
+          ],
+          "columnsTo": [
+            "id_role"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "users_id_bidang_bidang_id_bidang_fk": {
+          "name": "users_id_bidang_bidang_id_bidang_fk",
+          "tableFrom": "users",
+          "tableTo": "bidang",
+          "columnsFrom": [
+            "id_bidang"
+          ],
+          "columnsTo": [
+            "id_bidang"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "users_id_lokasi_lokasi_tugas_id_lokasi_fk": {
+          "name": "users_id_lokasi_lokasi_tugas_id_lokasi_fk",
+          "tableFrom": "users",
+          "tableTo": "lokasi_tugas",
+          "columnsFrom": [
+            "id_lokasi"
+          ],
+          "columnsTo": [
+            "id_lokasi"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "users_id_user": {
+          "name": "users_id_user",
+          "columns": [
+            "id_user"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "users_email_unique": {
+          "name": "users_email_unique",
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "checkConstraint": {}
+    }
+  },
+  "views": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "tables": {},
+    "indexes": {}
+  }
+}

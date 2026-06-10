@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1777962666430,
+      "tag": "0000_classy_cargill",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1777964947568,
+      "tag": "0001_lively_gauntlet",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1777966641032,
+      "tag": "0002_lucky_cloak",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1778058799922,
+      "tag": "0003_loose_doctor_octopus",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1778120000000,
+      "tag": "0004_tipe_file_fix",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1778062344265,
+      "tag": "0005_loud_romulus",
+      "breakpoints": true
+    }
+  ]
+}
