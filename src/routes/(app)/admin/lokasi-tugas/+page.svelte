@@ -1,10 +1,10 @@
-﻿<script lang="ts">
+<script lang="ts">
     import { enhance } from '$app/forms';
     import { goto } from '$app/navigation';
     import WilayahSelect from '$lib/components/WilayahSelect.svelte';
     import type { ActionData, PageData } from './$types';
     import type { LokasiTugas } from '$lib/types';
-    import { MapPin, Plus, CheckCircle2, FileX2, Edit2, X, Filter } from 'lucide-svelte';
+    import { MapPin, Plus, CheckCircle2, FileX2, Edit2, X, Filter, RotateCcw } from 'lucide-svelte';
 
     let { data, form }: { data: PageData; form: ActionData } = $props();
     const lokasi = $derived(data.lokasi as LokasiTugas[]);
@@ -75,9 +75,13 @@
                 {/each}
             </select>
         </div>
-        {#if filterKec}
-            <a href="/admin/lokasi-tugas" class="mb-0.5 px-4 py-2 text-xs font-bold text-zinc-500 uppercase tracking-widest hover:text-zinc-900 transition-colors">Reset Filter</a>
-        {/if}
+        <button
+            onclick={() => { filterKec = ''; goto('/admin/lokasi-tugas'); }}
+            disabled={!filterKec}
+            class="px-4 py-2.5 bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 disabled:hover:bg-white text-sm font-semibold rounded-xl transition-all whitespace-nowrap flex items-center justify-center gap-2 h-[42px]"
+        >
+            <RotateCcw class="w-4 h-4" /> Reset Filter
+        </button>
     </div>
 
     <div class="overflow-x-auto rounded-[2rem] border border-zinc-100 bg-white shadow-sm mt-4">

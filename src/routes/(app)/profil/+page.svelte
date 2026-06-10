@@ -121,15 +121,7 @@
                                     Lokasi Tugas
                                 </p>
                                 <p class="text-sm font-semibold text-zinc-800">
-                                    {#if profil.namaKecamatan}
-                                        {#if !profil.namaDesa || profil.namaDesa === '-' || profil.namaDesa === profil.namaKecamatan}
-                                            {profil.namaKecamatan}
-                                        {:else}
-                                            {profil.namaKecamatan} — {profil.namaDesa}
-                                        {/if}
-                                    {:else}
-                                        —
-                                    {/if}
+                                    {profil.namaKecamatan ?? '—'}
                                 </p>
                             </div>
                         </div>

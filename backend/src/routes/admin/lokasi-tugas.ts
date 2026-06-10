@@ -100,7 +100,7 @@ export const adminLokasiTugasRoutes = new Elysia({ prefix: '/admin/lokasi-tugas'
     {
       body: t.Object({
         namaKecamatan: t.String({ minLength: 2, maxLength: 100 }),
-        namaDesa: t.String({ minLength: 2, maxLength: 100 }),
+        namaDesa: t.String({ minLength: 1, maxLength: 100 }),
       }),
     }
   )
@@ -133,7 +133,7 @@ export const adminLokasiTugasRoutes = new Elysia({ prefix: '/admin/lokasi-tugas'
     {
       body: t.Object({
         namaKecamatan: t.Optional(t.String({ minLength: 2, maxLength: 100 })),
-        namaDesa: t.Optional(t.String({ minLength: 2, maxLength: 100 })),
+        namaDesa: t.Optional(t.String({ minLength: 1, maxLength: 100 })),
       }),
     }
   )

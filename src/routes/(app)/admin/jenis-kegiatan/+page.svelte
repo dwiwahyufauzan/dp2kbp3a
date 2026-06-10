@@ -2,7 +2,7 @@
     import { enhance } from '$app/forms';
     import type { ActionData, PageData } from './$types';
     import type { JenisKegiatan } from '$lib/types';
-    import { FileText, Plus, CheckCircle2, FileX2, Edit2, X } from 'lucide-svelte';
+    import { FileText, Plus, CheckCircle2, FileX2, Edit2, X, RotateCcw } from 'lucide-svelte';
     import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 
     let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -64,7 +64,7 @@
     {/if}
 
     <!-- FILTER BIDANG -->
-    <div class="flex items-center gap-3 bg-white px-4 py-3 rounded-2xl border border-zinc-100 shadow-sm max-w-sm">
+    <div class="flex items-center gap-3 bg-white px-4 py-3 rounded-2xl border border-zinc-100 shadow-sm max-w-md">
         <label for="bidangFilter" class="text-xs font-bold text-zinc-500 uppercase tracking-widest shrink-0">Filter Bidang:</label>
         <select
             id="bidangFilter"
@@ -76,6 +76,13 @@
                 <option value={b.idBidang}>{b.namaBidang}</option>
             {/each}
         </select>
+        <button
+            onclick={() => bidangFilter = ''}
+            disabled={!bidangFilter}
+            class="px-3 py-1.5 bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 disabled:hover:bg-white text-xs font-bold rounded-xl transition-all whitespace-nowrap flex items-center justify-center gap-1.5"
+        >
+            <RotateCcw class="w-3.5 h-3.5" /> Reset
+        </button>
     </div>
 
     <div class="overflow-x-auto rounded-[2rem] border border-zinc-100 bg-white shadow-sm mt-4">

@@ -2,7 +2,7 @@
     import { enhance } from '$app/forms';
     import type { ActionData, PageData } from './$types';
     import type { Pengguna, Role, Bidang } from '$lib/types';
-    import { Users, Plus, Search, CheckCircle2, FileX2, User, X, Eye, EyeOff } from 'lucide-svelte';
+    import { Users, Plus, Search, CheckCircle2, FileX2, User, X, Eye, EyeOff, RotateCcw } from 'lucide-svelte';
     import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 
     let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -15,19 +15,34 @@
     let editItem = $state<Pengguna | null>(null);
     let loading = $state(false);
     let searchQ = $state('');
+    let filterRole = $state('');
+    let filterBidang = $state('');
+    let filterKecamatan = $state('');
     let confirmOpen = $state(false);
     let confirmMsg = $state('');
     let pendingForm = $state<HTMLFormElement | null>(null);
     let showPassword = $state(false);
 
     const filtered = $derived(
-        searchQ
-            ? pengguna.filter((p) =>
-                    p.namaLengkap.toLowerCase().includes(searchQ.toLowerCase()) ||
-                    p.email.toLowerCase().includes(searchQ.toLowerCase())
-                )
-            : pengguna
+        pengguna.filter((p) => {
+            const matchesSearch = !searchQ || 
+                p.namaLengkap.toLowerCase().includes(searchQ.toLowerCase()) ||
+                p.email.toLowerCase().includes(searchQ.toLowerCase());
+
+            const matchesRole = !filterRole || p.namaRole === filterRole;
+            const matchesBidang = !filterBidang || p.idBidang === filterBidang;
+            const matchesKecamatan = !filterKecamatan || p.namaKecamatan === filterKecamatan;
+
+            return matchesSearch && matchesRole && matchesBidang && matchesKecamatan;
+        })
     );
+
+    function resetFilters() {
+        searchQ = '';
+        filterRole = '';
+        filterBidang = '';
+        filterKecamatan = '';
+    }
 
     const roleLabels: Record<string, string> = {
         admin: 'Administrator',
@@ -55,6 +70,22 @@
     function toTitle(s: string) {
         return s.toLowerCase().replace(/(^\w|\s\w)/g, (c) => c.toUpperCase());
     }
+
+    let selectedKecamatan = $state('');
+    let selectedRole = $state('');
+    let selectedBidang = $state('');
+
+    $effect(() => {
+        if (editItem) {
+            selectedKecamatan = editItem.namaKecamatan ?? '';
+            selectedRole = editItem.idRole ?? '';
+            selectedBidang = editItem.idBidang ?? '';
+        } else {
+            selectedKecamatan = '';
+            selectedRole = '';
+            selectedBidang = '';
+        }
+    });
 
     $effect(() => {
         if (form?.createSuccess || form?.updateSuccess || form?.deleteSuccess) {
@@ -102,27 +133,84 @@
         </div>
     {/if}
 
-    <!-- SEARCH -->
-    <div class="relative py-4">
-        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400">
-            <Search class="w-4 h-4" />
+    <!-- SEARCH & FILTERS -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center py-4">
+        <!-- Search bar -->
+        <div class="lg:col-span-4 relative">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400">
+                <Search class="w-4 h-4" />
+            </div>
+            <input
+                type="text"
+                placeholder="Cari nama atau email pengguna..."
+                bind:value={searchQ}
+                class="w-full pl-10 {searchQ ? 'pr-9' : 'pr-4'} py-2.5 bg-zinc-50/50 border border-zinc-200 rounded-xl text-sm outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all font-medium text-zinc-800 placeholder:text-zinc-400"
+            />
+            {#if searchQ}
+                <button
+                    type="button"
+                    onclick={() => searchQ = ''}
+                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-400 hover:text-zinc-700 transition-colors"
+                    aria-label="Hapus pencarian"
+                >
+                    <X class="w-3.5 h-3.5" />
+                </button>
+            {/if}
         </div>
-        <input
-            type="text"
-            placeholder="Cari berdasarkan nama atau email pengguna..."
-            bind:value={searchQ}
-            class="w-full pl-10 {searchQ ? 'pr-9' : 'pr-4'} py-2.5 bg-zinc-50/50 border border-zinc-200 rounded-xl text-sm outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all font-medium text-zinc-800 placeholder:text-zinc-400"
-        />
-        {#if searchQ}
+
+        <!-- Filter Role -->
+        <div class="lg:col-span-2">
+            <select
+                bind:value={filterRole}
+                class="w-full px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-semibold text-zinc-800 outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all cursor-pointer"
+                aria-label="Filter Role"
+            >
+                <option value="">Semua Role</option>
+                {#each roles as r}
+                    <option value={r.namaRole}>{roleLabels[r.namaRole] ?? r.namaRole}</option>
+                {/each}
+            </select>
+        </div>
+
+        <!-- Filter Bidang -->
+        <div class="lg:col-span-2">
+            <select
+                bind:value={filterBidang}
+                class="w-full px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-semibold text-zinc-800 outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all cursor-pointer"
+                aria-label="Filter Bidang"
+            >
+                <option value="">Semua Bidang</option>
+                {#each bidang as b}
+                    <option value={b.idBidang}>{b.namaBidang}</option>
+                {/each}
+            </select>
+        </div>
+
+        <!-- Filter Kecamatan -->
+        <div class="lg:col-span-2">
+            <select
+                bind:value={filterKecamatan}
+                class="w-full px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-semibold text-zinc-800 outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all cursor-pointer"
+                aria-label="Filter Kecamatan"
+            >
+                <option value="">Semua Kecamatan</option>
+                {#each kecamatanList as k}
+                    <option value={k.name}>{k.name}</option>
+                {/each}
+            </select>
+        </div>
+
+        <!-- Reset Filter -->
+        <div class="lg:col-span-2">
             <button
                 type="button"
-                onclick={() => searchQ = ''}
-                class="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-400 hover:text-zinc-700 transition-colors"
-                aria-label="Hapus pencarian"
+                onclick={resetFilters}
+                disabled={!searchQ && !filterRole && !filterBidang && !filterKecamatan}
+                class="w-full px-4 py-2.5 bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 disabled:hover:bg-white text-sm font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
             >
-                <X class="w-3.5 h-3.5" />
+                <RotateCcw class="w-4 h-4" /> Reset Filter
             </button>
-        {/if}
+        </div>
     </div>
 
     <!-- TABLE -->
@@ -228,19 +316,19 @@
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Role {showCreate ? '*' : ''}</label>
-                            <select name="idRole" required={showCreate} class="w-full px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-semibold text-zinc-800 outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all cursor-pointer">
+                            <select name="idRole" required={showCreate} bind:value={selectedRole} class="w-full px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-semibold text-zinc-800 outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all cursor-pointer">
                                 {#if showCreate}<option value="">-- Pilih Role --</option>{/if}
                                 {#each roles as r}
-                                    <option value={r.idRole} selected={editItem?.idRole === r.idRole}>{roleLabels[r.namaRole] ?? r.namaRole}</option>
-                                {/each}
+                                    <option value={r.idRole}>{roleLabels[r.namaRole] ?? r.namaRole}</option>
+                                  {/each}
                             </select>
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Bidang</label>
-                            <select name="idBidang" class="w-full px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-semibold text-zinc-800 outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all cursor-pointer">
+                            <select name="idBidang" bind:value={selectedBidang} class="w-full px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-semibold text-zinc-800 outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all cursor-pointer">
                                 <option value="">-- Tidak Ada --</option>
                                 {#each bidang as b}
-                                    <option value={b.idBidang} selected={editItem?.idBidang === b.idBidang}>{b.namaBidang}</option>
+                                    <option value={b.idBidang}>{b.namaBidang}</option>
                                 {/each}
                             </select>
                         </div>
@@ -274,10 +362,10 @@
                         </div>
                         <div>
                             <label for="namaKecamatan" class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Lokasi Tugas (Kecamatan)</label>
-                            <select id="namaKecamatan" name="namaKecamatan" class="w-full px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-semibold text-zinc-800 outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all cursor-pointer">
+                            <select id="namaKecamatan" name="namaKecamatan" bind:value={selectedKecamatan} class="w-full px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-semibold text-zinc-800 outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all cursor-pointer">
                                 <option value="">-- Tidak Ada / Umum --</option>
                                 {#each kecamatanList as k}
-                                    <option value={k.name} selected={editItem?.namaKecamatan === k.name}>{k.name}</option>
+                                    <option value={k.name}>{k.name}</option>
                                 {/each}
                             </select>
                         </div>

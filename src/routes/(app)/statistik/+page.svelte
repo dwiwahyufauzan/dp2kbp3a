@@ -1,7 +1,7 @@
-﻿<script lang="ts">
+<script lang="ts">
     import { goto } from '$app/navigation';
     import type { PageData } from './$types';
-    import { BarChart3, Filter, Users, FileText, CheckCircle2, Clock, PieChart, Activity } from 'lucide-svelte';
+    import { BarChart3, Filter, Users, FileText, CheckCircle2, Clock, PieChart, Activity, RotateCcw } from 'lucide-svelte';
 
     let { data }: { data: PageData } = $props();
 
@@ -46,6 +46,13 @@
         if (bulan) params.set('bulan', bulan);
         if (idBidang) params.set('idBidang', idBidang);
         goto(`/statistik?${params.toString()}`);
+    }
+
+    function resetFilter() {
+        tahun = String(new Date().getFullYear());
+        bulan = '';
+        idBidang = '';
+        goto('/statistik');
     }
 
     const maxJenis = $derived(
@@ -118,10 +125,21 @@
                 {/each}
             </select>
         </div>
-        <button
-            onclick={applyFilter}
-            class="px-6 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-bold rounded-xl transition-all shadow-md shadow-zinc-200 whitespace-nowrap flex items-center gap-2"
-        ><Filter class="w-4 h-4"/> Tampilkan</button>
+        <div class="flex items-center gap-2">
+            <button
+                onclick={applyFilter}
+                class="px-6 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-bold rounded-xl transition-all shadow-md shadow-zinc-200 whitespace-nowrap flex items-center gap-2"
+            >
+                <Filter class="w-4 h-4"/> Tampilkan
+            </button>
+            <button
+                onclick={resetFilter}
+                disabled={tahun === String(new Date().getFullYear()) && !bulan && !idBidang}
+                class="px-4 py-2.5 bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 disabled:hover:bg-white text-sm font-semibold rounded-xl transition-all whitespace-nowrap flex items-center justify-center gap-2"
+            >
+                <RotateCcw class="w-4 h-4"/> Reset
+            </button>
+        </div>
     </div>
 
     <!-- KPI CARDS -->

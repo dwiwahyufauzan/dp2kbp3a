@@ -3,7 +3,7 @@
     import StatusBadge from '$lib/components/StatusBadge.svelte';
     import type { PageData } from './$types';
     import type { LaporanItem } from '$lib/types';
-    import { FileText, Search, Filter, Plus, ChevronLeft, ChevronRight, X } from 'lucide-svelte';
+    import { FileText, Search, Filter, Plus, ChevronLeft, ChevronRight, X, RotateCcw } from 'lucide-svelte';
 
     let { data }: { data: PageData } = $props();
 
@@ -37,6 +37,14 @@
         if (idJenisFilter) params.set('idJenis', idJenisFilter);
         params.set('page', '1');
         goto(`/laporan?${params.toString()}`);
+    }
+
+    function resetFilter() {
+        searchInput = '';
+        statusFilter = '';
+        idBidangFilter = '';
+        idJenisFilter = '';
+        goto('/laporan');
     }
 
     function goToPage(p: number) {
@@ -140,6 +148,13 @@
                 class="px-8 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-bold rounded-xl transition-colors whitespace-nowrap flex items-center justify-center gap-2"
             >
                 <Filter class="w-4 h-4" /> Terapkan Filter
+            </button>
+            <button
+                onclick={resetFilter}
+                disabled={!searchInput && !statusFilter && !idBidangFilter && !idJenisFilter}
+                class="px-4 py-2.5 bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 disabled:hover:bg-white text-sm font-semibold rounded-xl transition-all whitespace-nowrap flex items-center justify-center gap-2"
+            >
+                <RotateCcw class="w-4 h-4" /> Reset
             </button>
         </div>
     </div>

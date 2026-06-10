@@ -1,4 +1,4 @@
-﻿<script lang="ts">
+<script lang="ts">
     import { goto } from '$app/navigation';
     import { untrack } from 'svelte';
     import type { PageData } from './$types';
@@ -38,6 +38,13 @@
         if (periodeValue) params.set('periode', periodeValue);
         if (idBidang) params.set('idBidang', idBidang);
         goto(`/rekap?${params.toString()}`);
+    }
+
+    function resetFilter() {
+        periodeValue = '';
+        idBidang = '';
+        filterType = 'bulanan';
+        goto('/rekap');
     }
 
     function handleExport(format: 'excel' | 'pdf' | 'word' | 'csv') {
@@ -159,11 +166,13 @@
             >
                 <Filter class="w-4 h-4" /> Terapkan Seleksi
             </button>
-            {#if data.periode || data.idBidang}
-                <a href="/rekap" class="h-full px-3 flex items-center justify-center text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 rounded-xl border border-transparent hover:border-zinc-200 transition-colors">
-                    <RotateCcw class="w-5 h-5" />
-                </a>
-            {/if}
+            <button
+                onclick={resetFilter}
+                disabled={!periodeValue && !idBidang}
+                class="px-4 py-2 bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50 h-full text-sm font-semibold rounded-xl transition-all whitespace-nowrap flex items-center justify-center gap-2 disabled:opacity-50 disabled:hover:bg-white"
+            >
+                <RotateCcw class="w-4 h-4" /> Reset
+            </button>
         </div>
     </div>
 
