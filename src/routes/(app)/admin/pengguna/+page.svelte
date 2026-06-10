@@ -1,8 +1,8 @@
-﻿<script lang="ts">
+<script lang="ts">
     import { enhance } from '$app/forms';
     import type { ActionData, PageData } from './$types';
     import type { Pengguna, Role, Bidang } from '$lib/types';
-    import { Users, Plus, Search, CheckCircle2, FileX2, User, X } from 'lucide-svelte';
+    import { Users, Plus, Search, CheckCircle2, FileX2, User, X, Eye, EyeOff } from 'lucide-svelte';
     import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 
     let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -18,6 +18,7 @@
     let confirmOpen = $state(false);
     let confirmMsg = $state('');
     let pendingForm = $state<HTMLFormElement | null>(null);
+    let showPassword = $state(false);
 
     const filtered = $derived(
         searchQ
@@ -39,6 +40,7 @@
         if (form?.createSuccess || form?.updateSuccess || form?.deleteSuccess) {
             showCreate = false;
             editItem = null;
+            showPassword = false;
         }
     });
 </script>
@@ -174,7 +176,7 @@
                         {#if showCreate} <Plus class="w-5 h-5 text-zinc-400" /> Tambah Pengguna {/if}
                         {#if editItem} <User class="w-5 h-5 text-zinc-400" /> Edit Pengguna {/if}
                     </h2>
-                    <button onclick={() => { showCreate = false; editItem = null; }} class="p-2 text-zinc-400 hover:text-zinc-900 rounded-xl transition-colors">
+                    <button onclick={() => { showCreate = false; editItem = null; showPassword = false; }} class="p-2 text-zinc-400 hover:text-zinc-900 rounded-xl transition-colors">
                         <X class="w-4 h-4" />
                     </button>
                 </div>
@@ -225,7 +227,28 @@
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Password {showCreate ? '*' : '(opsional)'}</label>
-                            <input name="password" type="password" required={showCreate} minlength="8" placeholder={showCreate ? "Min. 8 karakter" : "••••••••"} class="w-full px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-semibold text-zinc-800 outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all placeholder:text-zinc-400" />
+                            <div class="relative">
+                                <input 
+                                    name="password" 
+                                    type={showPassword ? 'text' : 'password'} 
+                                    required={showCreate} 
+                                    minlength="8" 
+                                    placeholder={showCreate ? "Min. 8 karakter" : "••••••••"} 
+                                    class="w-full px-4 py-2.5 pr-10 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-semibold text-zinc-800 outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all placeholder:text-zinc-400" 
+                                />
+                                <button
+                                    type="button"
+                                    onclick={() => showPassword = !showPassword}
+                                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-400 hover:text-zinc-700 transition-colors"
+                                    aria-label="Toggle password"
+                                >
+                                    {#if showPassword}
+                                        <EyeOff class="w-4 h-4" />
+                                    {:else}
+                                        <Eye class="w-4 h-4" />
+                                    {/if}
+                                </button>
+                            </div>
                         </div>
                         {#if !showCreate}
                             <div>
@@ -239,7 +262,7 @@
                     </div>
 
                     <div class="flex items-center gap-3 pt-4 border-t border-zinc-100">
-                        <button type="button" onclick={() => { showCreate = false; editItem = null; }} class="px-5 py-2.5 text-zinc-500 text-xs font-bold uppercase tracking-widest hover:text-zinc-900 transition-colors">Batal</button>
+                        <button type="button" onclick={() => { showCreate = false; editItem = null; showPassword = false; }} class="px-5 py-2.5 text-zinc-500 text-xs font-bold uppercase tracking-widest hover:text-zinc-900 transition-colors">Batal</button>
                         <button type="submit" disabled={loading} class="flex-1 px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 disabled:bg-zinc-300 text-white text-sm font-bold rounded-xl shadow-md transition-all">
                             {loading ? 'Memproses...' : 'Simpan Data'}
                         </button>
