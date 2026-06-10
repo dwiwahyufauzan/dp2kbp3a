@@ -1,6 +1,7 @@
 import { redirect } from '@sveltejs/kit'
 import type { LayoutServerLoad } from './$types'
 import { createAPI } from '$lib/server/api'
+import { env } from '$env/dynamic/private'
 
 export const load: LayoutServerLoad = async ({ locals, cookies }) => {
 	if (!locals.user) {
@@ -51,5 +52,5 @@ export const load: LayoutServerLoad = async ({ locals, cookies }) => {
 		if (res.ok) profil = await res.json()
 	} catch { /* abaikan */ }
 
-	return { user: locals.user, pendingCount, revisiCount, notifikasi, unreadNotif, profil }
+	return { user: locals.user, pendingCount, revisiCount, notifikasi, unreadNotif, profil, backendUrl: env.BACKEND_URL || 'http://localhost:3000' }
 }

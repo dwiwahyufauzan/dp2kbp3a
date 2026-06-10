@@ -1,4 +1,4 @@
-﻿import type { RequestHandler } from "./$types"
+import type { RequestHandler } from "./$types"
 import { createAPI } from "$lib/server/api"
 import ExcelJS from "exceljs"
 import {
@@ -9,7 +9,9 @@ import {
 import { jsPDF } from "jspdf"
 import autoTable from "jspdf-autotable"
 
-const BACKEND_BASE = "http://localhost:3000"
+import { env } from "$env/dynamic/private"
+
+const BACKEND_BASE = env.BACKEND_URL || "http://localhost:3000"
 
 interface DokEntry { filePath: string; tipeFile: string | null }
 interface RekapRow {

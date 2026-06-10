@@ -1,7 +1,9 @@
 import { fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
 
-const BACKEND = 'http://localhost:3000'
+import { env } from '$env/dynamic/private'
+
+const BACKEND = env.BACKEND_URL || 'http://localhost:3000'
 
 export const load: PageServerLoad = ({ locals }) => {
 	if (locals.user) {

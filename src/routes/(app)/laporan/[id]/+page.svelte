@@ -65,7 +65,7 @@
         return new Date(dt).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     }
 
-    const BACKEND = 'http://localhost:3000';
+    const BACKEND = data.backendUrl || 'http://localhost:3000';
 
     const statusTheme = $derived(() => {
         switch(laporan.statusVerifikasi) {

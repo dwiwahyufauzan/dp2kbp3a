@@ -1,4 +1,5 @@
-const BACKEND = 'http://localhost:3000'
+import { env } from '$env/dynamic/private'
+const BACKEND = env.BACKEND_URL || 'http://localhost:3000'
 
 /**
  * Buat API client yang meneruskan cookie session ke backend.
