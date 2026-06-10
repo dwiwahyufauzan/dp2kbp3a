@@ -6,6 +6,18 @@ Sistem informasi manajemen pelaporan kegiatan lapangan untuk **Dinas Pengendalia
 
 Aplikasi ini dirancang untuk memudahkan petugas lapangan dalam melaporkan kegiatan harian, serta mempermudah kepala bidang dan pimpinan dalam memantau, memverifikasi, dan merekap seluruh aktivitas operasional di lapangan.
 
+## Tampilan Aplikasi (Preview)
+
+Berikut adalah contoh pratinjau antarmuka dari sistem DP2KBP3A (ganti gambar di folder `screenshots/` sesuai keinginan Anda):
+
+| Halaman Dashboard | Halaman Buat Laporan |
+|:---:|:---:|
+| ![Dashboard](screenshots/dashboard.png) | ![Buat Laporan](screenshots/buat_laporan.png) |
+
+| Halaman Detail Laporan & Revisi | Halaman Statistik Kegiatan |
+|:---:|:---:|
+| ![Detail Laporan](screenshots/detail_laporan.png) | ![Statistik](screenshots/statistik.png) |
+
 ### Fitur Utama
 
 - 📝 **Input Laporan** — Petugas dapat menginput laporan kegiatan dengan detail lokasi, jenis kegiatan per bidang, jumlah peserta, dan deskripsi hasil kegiatan
