@@ -26,11 +26,11 @@ export const actions: Actions = {
 
 		const form = await request.formData()
 		const namaKecamatan = (form.get('namaKecamatan') as string | null)?.trim() ?? ''
-		const namaDesa = (form.get('namaDesa') as string | null)?.trim() ?? ''
 
-		// Resolve idLokasi: find-or-create from namaKecamatan + namaDesa
+		// Resolve idLokasi: find-or-create from namaKecamatan + namaDesa ('-')
 		let idLokasi: string | null = null
-		if (namaKecamatan && namaDesa) {
+		if (namaKecamatan) {
+			const namaDesa = '-'
 			const resCreate = await api.post('/admin/lokasi-tugas', { namaKecamatan, namaDesa })
 			if (resCreate.ok) {
 				const created = await resCreate.json() as { idLokasi: string }
@@ -39,8 +39,8 @@ export const actions: Actions = {
 				// Already exists — find it by name
 				const resFind = await api.get(`/admin/lokasi-tugas?kecamatan=${encodeURIComponent(namaKecamatan)}`)
 				if (resFind.ok) {
-					const list = await resFind.json() as { idLokasi: string; namaDesa: string }[]
-					const match = list.find((l) => l.namaDesa.toLowerCase() === namaDesa.toLowerCase())
+					const list = await resFind.json() as { idLokasi: string; namaDesa: string; namaKecamatan: string }[]
+					const match = list.find((l) => l.namaKecamatan.toLowerCase() === namaKecamatan.toLowerCase() && l.namaDesa === '-')
 					if (match) idLokasi = match.idLokasi
 				}
 			}
@@ -81,12 +81,32 @@ export const actions: Actions = {
 		const idRole = form.get('idRole') as string
 		const idBidang = form.get('idBidang') as string
 		const statusAktif = form.get('statusAktif') as string
+		const namaKecamatan = (form.get('namaKecamatan') as string | null)?.trim() ?? ''
+
+		// Resolve idLokasi for update
+		let idLokasi: string | null = null
+		if (namaKecamatan) {
+			const namaDesa = '-'
+			const resCreate = await api.post('/admin/lokasi-tugas', { namaKecamatan, namaDesa })
+			if (resCreate.ok) {
+				const created = await resCreate.json() as { idLokasi: string }
+				idLokasi = created.idLokasi
+			} else if (resCreate.status === 409) {
+				const resFind = await api.get(`/admin/lokasi-tugas?kecamatan=${encodeURIComponent(namaKecamatan)}`)
+				if (resFind.ok) {
+					const list = await resFind.json() as { idLokasi: string; namaDesa: string; namaKecamatan: string }[]
+					const match = list.find((l) => l.namaKecamatan.toLowerCase() === namaKecamatan.toLowerCase() && l.namaDesa === '-')
+					if (match) idLokasi = match.idLokasi
+				}
+			}
+		}
 
 		if (namaLengkap) body.namaLengkap = namaLengkap
 		if (email) body.email = email
 		if (password) body.password = password
 		if (idRole) body.idRole = idRole
 		body.idBidang = idBidang || null
+		body.idLokasi = idLokasi
 		if (statusAktif) body.statusAktif = statusAktif
 
 		const res = await api.patch(`/admin/pengguna/${id}`, body)

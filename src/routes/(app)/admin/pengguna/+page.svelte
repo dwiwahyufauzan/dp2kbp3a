@@ -36,6 +36,26 @@
         pimpinan: 'Pimpinan'
     };
 
+    let kecamatanList = $state<{ id: string; name: string }[]>([]);
+    let loadingKec = $state(true);
+
+    $effect(() => {
+        fetch('/api/wilayah/kecamatan/3213')
+            .then((r) => r.json())
+            .then((d) => {
+                kecamatanList = d.map((k: { id: string; name: string }) => ({
+                    id: k.id,
+                    name: toTitle(k.name)
+                })).sort((a: any, b: any) => a.name.localeCompare(b.name));
+            })
+            .catch(() => { kecamatanList = []; })
+            .finally(() => { loadingKec = false; });
+    });
+
+    function toTitle(s: string) {
+        return s.toLowerCase().replace(/(^\w|\s\w)/g, (c) => c.toUpperCase());
+    }
+
     $effect(() => {
         if (form?.createSuccess || form?.updateSuccess || form?.deleteSuccess) {
             showCreate = false;
@@ -122,6 +142,7 @@
                         <th class="px-6 py-4 text-left text-[10px] font-bold text-zinc-500 uppercase tracking-[0.1em]">Nama & Email</th>
                         <th class="px-6 py-4 text-left text-[10px] font-bold text-zinc-500 uppercase tracking-[0.1em]">Role</th>
                         <th class="px-6 py-4 text-left text-[10px] font-bold text-zinc-500 uppercase tracking-[0.1em] hidden md:table-cell">Bidang</th>
+                        <th class="px-6 py-4 text-left text-[10px] font-bold text-zinc-500 uppercase tracking-[0.1em] hidden md:table-cell">Lokasi Tugas</th>
                         <th class="px-6 py-4 text-left text-[10px] font-bold text-zinc-500 uppercase tracking-[0.1em] hidden lg:table-cell">Status</th>
                         <th class="px-6 py-4 text-right text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Aksi</th>
                     </tr>
@@ -144,6 +165,7 @@
                                 <span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-zinc-100 text-zinc-600 uppercase tracking-widest">{roleLabels[p.namaRole] ?? p.namaRole}</span>
                             </td>
                             <td class="px-6 py-4 text-xs font-semibold text-zinc-600 hidden md:table-cell">{p.namaBidang ?? '-'}</td>
+                            <td class="px-6 py-4 text-xs font-semibold text-zinc-600 hidden md:table-cell">{p.namaKecamatan ?? '-'}</td>
                             <td class="px-6 py-4 hidden lg:table-cell">
                                 {#if p.statusAktif === 'y'}
                                     <span class="flex items-center gap-1.5 text-xs font-bold text-emerald-600"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Aktif</span>
@@ -250,16 +272,26 @@
                                 </button>
                             </div>
                         </div>
-                        {#if !showCreate}
-                            <div>
-                                <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Status Aktif</label>
-                                <select name="statusAktif" class="w-full px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-semibold text-zinc-800 outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all cursor-pointer">
-                                    <option value="y" selected={editItem?.statusAktif === 'y'}>Aktif</option>
-                                    <option value="n" selected={editItem?.statusAktif === 'n'}>Nonaktif</option>
-                                </select>
-                            </div>
-                        {/if}
+                        <div>
+                            <label for="namaKecamatan" class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Lokasi Tugas (Kecamatan)</label>
+                            <select id="namaKecamatan" name="namaKecamatan" class="w-full px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-semibold text-zinc-800 outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all cursor-pointer">
+                                <option value="">-- Tidak Ada / Umum --</option>
+                                {#each kecamatanList as k}
+                                    <option value={k.name} selected={editItem?.namaKecamatan === k.name}>{k.name}</option>
+                                {/each}
+                            </select>
+                        </div>
                     </div>
+
+                    {#if !showCreate}
+                        <div>
+                            <label class="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Status Aktif</label>
+                            <select name="statusAktif" class="w-full px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-semibold text-zinc-800 outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all cursor-pointer">
+                                <option value="y" selected={editItem?.statusAktif === 'y'}>Aktif</option>
+                                <option value="n" selected={editItem?.statusAktif === 'n'}>Nonaktif</option>
+                            </select>
+                        </div>
+                    {/if}
 
                     <div class="flex items-center gap-3 pt-4 border-t border-zinc-100">
                         <button type="button" onclick={() => { showCreate = false; editItem = null; showPassword = false; }} class="px-5 py-2.5 text-zinc-500 text-xs font-bold uppercase tracking-widest hover:text-zinc-900 transition-colors">Batal</button>

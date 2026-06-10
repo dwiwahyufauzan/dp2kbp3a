@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia'
 import { eq } from 'drizzle-orm'
 import { db } from '../../db/connection'
-import { users, roles, bidang } from '../../db/schema'
+import { users, roles, bidang, lokasiTugas } from '../../db/schema'
 import { authPlugin } from '../../plugins/auth'
 import type { UserPayload } from '../../types'
 
@@ -31,12 +31,15 @@ export const adminPenggunaRoutes = new Elysia({ prefix: '/admin/pengguna' })
         idBidang: users.idBidang,
         namaBidang: bidang.namaBidang,
         idLokasi: users.idLokasi,
+        namaKecamatan: lokasiTugas.namaKecamatan,
+        namaDesa: lokasiTugas.namaDesa,
         statusAktif: users.statusAktif,
         createdAt: users.createdAt,
       })
       .from(users)
       .leftJoin(roles, eq(users.idRole, roles.idRole))
       .leftJoin(bidang, eq(users.idBidang, bidang.idBidang))
+      .leftJoin(lokasiTugas, eq(users.idLokasi, lokasiTugas.idLokasi))
       .orderBy(users.namaLengkap)
   })
 
@@ -52,12 +55,15 @@ export const adminPenggunaRoutes = new Elysia({ prefix: '/admin/pengguna' })
         idBidang: users.idBidang,
         namaBidang: bidang.namaBidang,
         idLokasi: users.idLokasi,
+        namaKecamatan: lokasiTugas.namaKecamatan,
+        namaDesa: lokasiTugas.namaDesa,
         statusAktif: users.statusAktif,
         createdAt: users.createdAt,
       })
       .from(users)
       .leftJoin(roles, eq(users.idRole, roles.idRole))
       .leftJoin(bidang, eq(users.idBidang, bidang.idBidang))
+      .leftJoin(lokasiTugas, eq(users.idLokasi, lokasiTugas.idLokasi))
       .where(eq(users.idUser, params.id))
       .limit(1)
 

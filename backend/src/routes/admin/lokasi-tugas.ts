@@ -1,5 +1,5 @@
 import { Elysia, t } from 'elysia'
-import { eq, like, or } from 'drizzle-orm'
+import { eq, like, or, and } from 'drizzle-orm'
 import { db } from '../../db/connection'
 import { lokasiTugas } from '../../db/schema'
 import { authPlugin } from '../../plugins/auth'
@@ -74,7 +74,12 @@ export const adminLokasiTugasRoutes = new Elysia({ prefix: '/admin/lokasi-tugas'
       const [dupCheck] = await db
         .select({ idLokasi: lokasiTugas.idLokasi })
         .from(lokasiTugas)
-        .where(eq(lokasiTugas.namaDesa, body.namaDesa.trim()))
+        .where(
+          and(
+            eq(lokasiTugas.namaKecamatan, body.namaKecamatan.trim()),
+            eq(lokasiTugas.namaDesa, body.namaDesa.trim())
+          )
+        )
         .limit(1)
 
       void existing // used above for context

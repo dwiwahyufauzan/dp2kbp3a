@@ -93,6 +93,8 @@ export interface Pengguna {
 	idBidang: string | null
 	namaBidang: string | null
 	idLokasi: string | null
+	namaKecamatan?: string | null
+	namaDesa?: string | null
 	statusAktif: 'y' | 'n'
 	createdAt: string
 }
