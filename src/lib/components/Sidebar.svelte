@@ -1,7 +1,8 @@
 <script lang="ts">
     import { page } from '$app/stores';
     import type { NamaRole } from '$lib/types';
-    import { LayoutDashboard, FileSpreadsheet, Layers, LineChart, Users, Grid2X2, List, Activity, LogOut, ShieldCheck, ClipboardEdit } from 'lucide-svelte';
+    import { LayoutDashboard, FileSpreadsheet, Layers, LineChart, Users, Grid2X2, List, LogOut, ShieldCheck, ClipboardEdit } from 'lucide-svelte';
+    import logo from '$lib/assets/logo.jpeg';
 
     let {
         user,
@@ -107,8 +108,8 @@
     <div class="px-5 py-6 flex items-center {collapsed ? 'justify-center' : 'justify-between'} border-b border-zinc-900">
         <div class="flex items-center gap-3">
             <div class="relative shrink-0">
-                <div class="w-8 h-8 bg-zinc-100 rounded-lg flex items-center justify-center text-zinc-950 shrink-0">
-                    <Activity class="w-5 h-5 font-bold" />
+                <div class="w-8 h-8 bg-zinc-100 rounded-lg overflow-hidden flex items-center justify-center text-zinc-950 shrink-0">
+                    <img src={logo} alt="Logo" class="w-full h-full object-cover" />
                 </div>
                 <div class="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-zinc-950"></div>
             </div>

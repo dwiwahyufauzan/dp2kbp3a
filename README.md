@@ -1,200 +1,176 @@
-# DP2KBP3A — Sistem Pelaporan Kegiatan Lapangan
+# 🏛️ DP2KBP3A — Sistem Pelaporan Kegiatan Lapangan
 
-Sistem informasi manajemen pelaporan kegiatan lapangan untuk **Dinas Pengendalian Penduduk, Keluarga Berencana, Pemberdayaan Perempuan dan Perlindungan Anak (DP2KBP3A)**.
+Sistem Informasi Manajemen Pelaporan Kegiatan Lapangan Terpadu untuk **Dinas Pengendalian Penduduk, Keluarga Berencana, Pemberdayaan Perempuan dan Perlindungan Anak (DP2KBP3A)**.
 
-## Tentang Aplikasi
+Aplikasi ini dirancang secara khusus untuk memfasilitasi petugas lapangan dalam mendokumentasikan kegiatan operasional secara akurat, sekaligus mempermudah kepala bidang dan pimpinan dalam memantau, memverifikasi, menganalisis, serta mengekspor rekapitulasi aktivitas secara real-time.
 
-Aplikasi ini dirancang untuk memudahkan petugas lapangan dalam melaporkan kegiatan harian, serta mempermudah kepala bidang dan pimpinan dalam memantau, memverifikasi, dan merekap seluruh aktivitas operasional di lapangan.
+---
 
-## Tampilan Aplikasi (Preview)
-
-Berikut adalah contoh pratinjau antarmuka dari sistem DP2KBP3A (ganti gambar di folder `screenshots/` sesuai keinginan Anda):
+## 🎨 Tampilan Aplikasi (Preview)
 
 | Halaman Dashboard | Halaman Buat Laporan |
 |:---:|:---:|
 | ![Dashboard](screenshots/dashboard.png) | ![Buat Laporan](screenshots/buat_laporan.png) |
 
-| Halaman Detail Laporan & Revisi | Halaman Statistik Kegiatan |
+| Halaman Detail & Visual Diff | Halaman Statistik Interaktif |
 |:---:|:---:|
 | ![Detail Laporan](screenshots/detail_laporan.png) | ![Statistik](screenshots/statistik.png) |
 
-### Fitur Utama
+---
 
-- 📝 **Input Laporan** — Petugas dapat menginput laporan kegiatan dengan detail lokasi, jenis kegiatan per bidang, jumlah peserta, dan deskripsi hasil kegiatan
-- 📎 **Upload Dokumentasi** — Mendukung upload gambar (JPG, PNG, WebP), PDF, Word (.docx), Excel (.xlsx), dan ZIP
-- ✅ **Verifikasi Laporan** — Kepala bidang dapat menyetujui, menolak, atau meminta revisi laporan
-- 🔄 **Riwayat Revisi** — Setiap perubahan laporan tersimpan sebagai histori yang dapat dilihat kapan saja
-- 📊 **Rekap & Statistik** — Rekapitulasi dan statistik kegiatan per bidang, per periode, dan per wilayah
-- 🔔 **Notifikasi** — Notifikasi real-time untuk laporan baru, persetujuan, penolakan, dan permintaan revisi
-- 👥 **Manajemen Pengguna** — Admin dapat mengelola akun petugas, kepala bidang, dan pimpinan
-- 🏢 **Kegiatan per Bidang** — Setiap bidang memiliki daftar kegiatan tersendiri yang muncul secara dinamis
+## ✨ Fitur Unggulan & Arsitektur Lanjutan
 
-### Peran Pengguna
+Sistem ini telah dilengkapi dengan standar arsitektur modern untuk memastikan keandalan, keamanan, dan performa jangka panjang:
 
-| Peran | Hak Akses |
-|-------|-----------|
-| `petugas` | Input laporan, upload dokumentasi, lihat laporan sendiri |
-| `kepala_bidang` | Verifikasi laporan bidangnya, lihat semua laporan |
-| `pimpinan` | Lihat statistik & rekap, kelola master kegiatan |
-| `admin` | Akses penuh — kelola pengguna, semua laporan, dan konfigurasi |
+### 1. 🔄 Visual Revision Diff Viewer
+*   **Perbandingan Sebelum/Sesudah**: Setiap kali petugas mengedit laporan, sistem menyimpan snapshot data lama. Riwayat perubahan disajikan dalam tabel komparasi interaktif yang menyorot perbedaan secara visual.
+*   **Warna & Coretan Kontras**: Nilai lama dicoret dan diberi warna merah (`line-through red`), sedangkan nilai baru diwarnai hijau tebal.
+*   **Translasi Label**: Mengubah nama kunci database teknis menjadi label ramah pengguna (misalnya: `jumlahPeserta` diterjemahkan menjadi "Total Peserta").
+
+### 2. ⚡ In-Memory Cache untuk Statistik & Grafik
+*   **Akselerasi Pemuatan**: Menghindari query database yang berat secara berulang-ulang dengan menaruh data grafik `/statistik` di dalam memory cache backend dengan TTL (Time-To-Live).
+*   **Invalidasi Otomatis (Instant Invalidation)**: Cache secara otomatis dibersihkan seketika ketika ada penambahan, pengubahan, penghapusan laporan, atau keputusan verifikasi baru agar dashboard pimpinan tetap aktual.
+
+### 3. 🔔 Notifikasi Real-time & Toast Alerts
+*   **Siklus Polling 15 Detik**: Frontend SvelteKit melakukan sinkronisasi dengan endpoint `/api/notifikasi` setiap 15 detik menggunakan sesi cookie terenkripsi.
+*   **Popup Premium**: Menggunakan Svelte 5 global stores untuk memicu notifikasi Toast dengan animasi mulus dan penyesuaian warna berdasarkan jenis aksi (Disetujui = Hijau, Ditolak = Merah, Revisi = Amber).
+
+### 4. 🔒 Keamanan Siber & Input Sanitization
+*   **Input Sanitizer**: Dilengkapi utilitas pembersih XSS (`sanitizer.ts`) yang memindai dan membersihkan tag HTML berbahaya dari payload request body secara rekursif sebelum disimpan di database.
+*   **Security Headers**: Backend Elysia menginjeksi header keamanan standar industri secara global (termasuk Content Security Policy (CSP), HSTS, X-Frame-Options, X-Content-Type-Options, dan Referrer-Policy).
+*   **Rate Limiting**: Pembatasan request berbasis IP klien (Login maks 5 req/menit, Buat laporan maks 15 req/menit, Upload berkas maks 20 req/menit) untuk mencegah serangan DoS dan brute force.
+
+### 5. 🖼️ Kompresi Gambar Otomatis & Fail-Safe Upload
+*   **Sharp Compression**: Setiap file dokumentasi berformat gambar akan dikompresi kualitasnya menjadi 80% dan ukurannya dibatasi pada resolusi maksimal 1200px lebar/tinggi guna menghemat penyimpanan server hingga 90%.
+*   **Fail-Safe Mode**: Jika terjadi kendala pada library Sharp, sistem secara otomatis akan menggunakan fallback *raw upload* agar petugas di lapangan tetap dapat mengunggah berkas tanpa gangguan.
+
+### 6. 🗑️ Mekanisme Soft Deletes (Aman untuk Audit)
+*   **Penyimpanan Arsip**: Laporan yang dihapus oleh admin tidak akan hilang dari disk maupun database fisik melainkan hanya ditandai `deleted_at = waktu_penghapusan` untuk menjamin integritas data audit internal.
+
+### 7. 🐳 Orkestrasi Docker & Automated Backup (DevOps)
+*   **Full Dockerization**: Frontend, backend, dan database MySQL berjalan dalam kontainer terisolasi yang dihubungkan lewat network internal.
+*   **Daily Backup Container**: Dilengkapi dengan container `db-backup` yang secara otomatis melakukan SQL dump database setiap pukul 02:00 pagi dan menyimpannya di drive lokal host (`c:/dp2kbp3a-backups`) selama 7 hari terakhir.
 
 ---
 
-## Stack Teknologi
+## 👥 Peran Pengguna & Hak Akses
+
+| Peran | Deskripsi Hak Akses |
+|-------|--------------------|
+| `petugas` | Menginput laporan kegiatan, mengunggah dokumentasi, melihat laporan pribadi, dan merevisi data yang ditolak/diminta revisi. |
+| `kepala_bidang` | Melihat seluruh laporan, memverifikasi (menyetujui/menolak/revisi) laporan khusus di bawah bidang kerjanya. |
+| `pimpinan` | Memantau grafik statistik perkembangan kegiatan, mengunduh rekapitulasi, dan memantau log aktivitas. |
+| `admin` | Mengelola data pengguna (petugas, kabid, pimpinan), mengelola master jenis kegiatan, serta memiliki akses penuh ke sistem. |
+
+---
+
+## 💻 Stack Teknologi
 
 | Komponen | Teknologi |
 |----------|-----------|
-| Frontend | SvelteKit 5, Tailwind CSS v4 |
-| Backend | Elysia (Bun runtime) |
-| ORM | Drizzle ORM |
-| Database | MySQL 8+ |
-| Auth | JWT (cookie-based session) |
-| Runtime | Bun |
+| **Frontend Framework** | SvelteKit 5 (Runes-based), Tailwind CSS v4 |
+| **Backend Engine** | Elysia Framework, Bun Runtime |
+| **Database & ORM** | MySQL 8, Drizzle ORM |
+| **Image Processor** | Sharp |
+| **Orkestrasi & Backup** | Docker Compose, databack/mysql-backup |
 
 ---
 
-## Struktur Folder
+## ⚙️ Petunjuk Jalankan Aplikasi
 
-```
-DP2KBP3A/
-├── backend/               # API Server (Elysia + Bun)
-│   ├── src/
-│   │   ├── db/
-│   │   │   ├── schema.ts  # Drizzle schema (semua tabel)
-│   │   │   └── connection.ts
-│   │   ├── routes/        # Route handler per fitur
-│   │   ├── plugins/       # JWT auth plugin
-│   │   ├── seed.ts        # Data awal database
-│   │   └── index.ts       # Entry point API
-│   └── uploads/           # File upload tersimpan di sini
-│
-├── src/                   # Frontend SvelteKit
-│   ├── lib/
-│   │   ├── components/    # Komponen reusable (Sidebar, dll)
-│   │   ├── server/        # API helper (server-side)
-│   │   └── stores/        # State management (Svelte stores)
-│   └── routes/
-│       ├── (app)/         # Halaman utama (protected)
-│       │   ├── dashboard/
-│       │   ├── laporan/   # CRUD laporan kegiatan
-│       │   ├── verifikasi/
-│       │   ├── rekap/
-│       │   ├── statistik/
-│       │   └── admin/
-│       ├── login/
-│       └── api/           # Server routes (proxy/upload)
-│
-└── database/
-    └── dp2kbp3a_schema.sql  # SQL lengkap untuk setup database
-```
+### Opsi A. Menggunakan Docker Compose (Direkomendasikan untuk Produksi & Uji Coba)
+
+Pastikan Anda telah menginstal **Docker Desktop** di komputer Anda.
+
+1. Clone project ini dan masuk ke folder root.
+2. Jalankan perintah orkestrasi Docker:
+   ```bash
+   docker compose up --build -d
+   ```
+3. Akses layanan:
+   *   **Frontend**: [http://localhost:5173](http://localhost:5173)
+   *   **Backend API**: [http://localhost:3000](http://localhost:3000)
+   *   **MySQL Port**: `3306` (Tanpa password, db: `dp2kbp3a`)
+4. Berkas dokumentasi akan tersimpan di `C:\dp2kbp3a-uploads` dan file backup harian berada di `C:\dp2kbp3a-backups` di komputer host Anda.
 
 ---
 
-## Cara Instalasi & Menjalankan
+### Opsi B. Menjalankan Secara Manual (Development Mode)
 
-### Prasyarat
+#### Prasyarat:
+*   [Bun Runtime](https://bun.sh/) terinstal di komputer.
+*   Layanan database MySQL aktif.
 
-- [Bun](https://bun.sh/) v1.x
-- MySQL 8+
-- Node.js 18+ (untuk frontend)
-
-### 1. Setup Database
-
+#### Langkah 1: Inisialisasi Database
 ```sql
--- Buat database di MySQL
 CREATE DATABASE dp2kbp3a CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
-
-Kemudian import file SQL:
-```sh
+Import skema dasar:
+```bash
 mysql -u root -p dp2kbp3a < database/dp2kbp3a_schema.sql
 ```
 
-### 2. Setup Backend
+#### Langkah 2: Konfigurasi & Jalankan Backend
+1. Masuk ke folder backend:
+   ```bash
+   cd backend
+   ```
+2. Salin berkas lingkungan dan konfigurasikan koneksi MySQL:
+   ```bash
+   cp .env.example .env
+   ```
+3. Pasang dependensi dan jalankan database seeding:
+   ```bash
+   bun install
+   bun run seed
+   ```
+4. Jalankan backend development server:
+   ```bash
+   bun run dev
+   ```
 
-```sh
-cd backend
-
-# Salin dan isi variabel lingkungan
-cp .env.example .env
-# Edit .env: isi DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, JWT_SECRET
-
-# Install dependensi
-bun install
-
-# Jalankan seed data awal (roles, bidang, kegiatan, admin)
-bun run seed
-
-# Jalankan server backend (port 3000)
-bun run dev
-```
-
-### 3. Setup Frontend
-
-```sh
-# Di folder root project
-npm install  # atau: bun install
-
-# Salin dan isi .env
-cp .env.example .env
-# Edit: VITE_API_URL=http://localhost:3000
-
-# Jalankan development server (port 5173)
-npm run dev
-```
-
-Akses aplikasi di: **http://localhost:5173**
-
----
-
-## Akun Default (Setelah Seed)
-
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | `admin@dp2kbp3a.go.id` | `Admin@1234` |
-
-> ⚠️ **PENTING**: Segera ganti password admin setelah login pertama kali!
+#### Langkah 3: Konfigurasi & Jalankan Frontend
+1. Kembali ke root folder, pasang dependensi:
+   ```bash
+   bun install
+   ```
+2. Salin berkas lingkungan frontend:
+   ```bash
+   cp .env.example .env
+   ```
+3. Jalankan frontend development server:
+   ```bash
+   bun run dev
+   ```
+Akses aplikasi di browser pada alamat: **http://localhost:5173**
 
 ---
 
-## Bidang & Kegiatan
+## 🔑 Akun Default Seeding
 
-### Bidang Pengendalian Penduduk
-- Penyuluhan Kependudukan
-- Pendataan Keluarga
-- Sosialisasi Program KKBPK
-- Pembinaan Kelompok Kerja
-- Pengumpulan Data Demografi
-- Analisis Laju Pertumbuhan Penduduk
+Setelah menjalankan data seeding (`bun run seed`), Anda dapat masuk dengan akun Administrator berikut:
 
-### Bidang Keluarga Berencana
-- Penyuluhan KB
-- Distribusi Alat Kontrasepsi
-- Pelayanan KB Mobile
-- Pendampingan Akseptor KB Baru
-- Konseling KB
-- Monitoring Peserta KB Aktif
-- Pembentukan Kelompok KB Pria
+*   **Email**: `admin@dp2kbp3a.go.id`
+*   **Password**: `Admin@1234`
 
-### Bidang Pemberdayaan Perempuan
-- Pelatihan Keterampilan Perempuan
-- Sosialisasi Pengarusutamaan Gender
-- Pembinaan Organisasi Wanita
-- Pendampingan Korban KDRT
-- Peningkatan Kapasitas Perempuan
-- Penyuluhan Hak-Hak Perempuan
-
-### Bidang Perlindungan Anak
-- Sosialisasi Perlindungan Anak
-- Penanganan Kasus Anak
-- Pembentukan Forum Anak
-- Pengembangan Kota Layak Anak
-- Pendampingan Anak Rentan
-- Pelatihan Parenting
-- Monitoring Tumbuh Kembang Anak
+> ⚠️ **PERINGATAN KEAMANAN**: Segera ubah kata sandi administrator Anda pada halaman pengaturan profil setelah berhasil masuk untuk pertama kalinya.
 
 ---
 
-## Lisensi
+## 🏢 Daftar Bidang & Kegiatan Instansi
 
-Hak cipta © 2025 DP2KBP3A. Seluruh hak dilindungi.
+### 1. Bidang Pengendalian Penduduk (PP)
+*   Penyuluhan Kependudukan, Pendataan Keluarga, Sosialisasi Program KKBPK, Pembinaan Kelompok Kerja, Pengumpulan Data Demografi, Analisis Pertumbuhan Penduduk.
+
+### 2. Bidang Keluarga Berencana (KB)
+*   Penyuluhan KB, Distribusi Alat Kontrasepsi, Pelayanan KB Keliling (Mobile), Konseling KB, Pendampingan Stunting, Kelompok KB Pria.
+
+### 3. Bidang Pemberdayaan Perempuan (PRM)
+*   Pelatihan Keterampilan Perempuan, Pengarusutamaan Gender, Pendampingan Korban KDRT, Pemberdayaan Ekonomi Perempuan, Sosialisasi Hak Perempuan.
+
+### 4. Bidang Perlindungan Anak (PA)
+*   Sosialisasi Perlindungan Anak, Forum Anak, Kota Layak Anak (KLA), Pelatihan Pola Asuh (Parenting), Pencegahan Kekerasan Anak.
+
+---
+
+Hak cipta © 2026 DP2KBP3A. Seluruh hak dilindungi.

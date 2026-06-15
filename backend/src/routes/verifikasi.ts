@@ -1,9 +1,10 @@
 import { Elysia } from 'elysia'
-import { eq, and, desc } from 'drizzle-orm'
+import { eq, and, desc, isNull } from 'drizzle-orm'
 import { db } from '../db/connection'
 import { laporanKegiatan, users, jenisKegiatan, bidang, notifikasi, dokumentasiLaporan } from '../db/schema'
 import { authPlugin } from '../plugins/auth'
 import type { UserPayload } from '../types'
+import { clearCachePattern } from '../utils/cache'
 
 export const verifikasiRoutes = new Elysia({ prefix: '/verifikasi' })
   .use(authPlugin)
@@ -23,7 +24,10 @@ export const verifikasiRoutes = new Elysia({ prefix: '/verifikasi' })
   .get('/', async (ctx) => {
     const u = (ctx as unknown as { user: UserPayload }).user
 
-    const conditions = [eq(laporanKegiatan.statusVerifikasi, 'Pending')]
+    const conditions = [
+      eq(laporanKegiatan.statusVerifikasi, 'Pending'),
+      isNull(laporanKegiatan.deletedAt),
+    ]
 
     // Kepala bidang hanya lihat laporan dari bidangnya
     if (u.namaRole === 'kepala_bidang') {
@@ -88,7 +92,7 @@ export const verifikasiRoutes = new Elysia({ prefix: '/verifikasi' })
       })
       .from(laporanKegiatan)
       .leftJoin(jenisKegiatan, eq(laporanKegiatan.idJenis, jenisKegiatan.idJenis))
-      .where(eq(laporanKegiatan.idLaporan, params.id))
+      .where(and(eq(laporanKegiatan.idLaporan, params.id), isNull(laporanKegiatan.deletedAt)))
       .limit(1)
 
     if (!laporan) {
@@ -137,5 +141,6 @@ export const verifikasiRoutes = new Elysia({ prefix: '/verifikasi' })
       isRead: 0,
     }])
 
+    clearCachePattern('stats:')
     return { message: `Laporan berhasil ${b.statusVerifikasi.toLowerCase()}` }
   })

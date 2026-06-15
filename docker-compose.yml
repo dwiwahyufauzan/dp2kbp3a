@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: dp2kbp3a-db
+    restart: always
+    environment:
+      MYSQL_DATABASE: dp2kbp3a
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  db-backup:
+    image: databack/mysql-backup
+    container_name: dp2kbp3a-db-backup
+    restart: always
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASS: ""
+      DB_NAMES: dp2kbp3a
+      BACKUP_CRON: "0 2 * * *" # Setiap hari pukul 02:00
+      BACKUP_RETAIN: "7" # Simpan backup 7 hari terakhir
+    volumes:
+      - c:/dp2kbp3a-backups:/db
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: dp2kbp3a-backend
+    restart: always
+    depends_on:
+      - db
+    ports:
+      - "3000:3000"
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ""
+      DB_NAME: dp2kbp3a
+      JWT_SECRET: dp2kbp3a-super-secret-key-ganti-sebelum-deploy-2026
+      FRONTEND_URL: http://localhost:5173
+      PORT: 3000
+      NODE_ENV: production
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      # Menyimpan berkas dokumentasi di luar folder project pada host
+      - c:/dp2kbp3a-uploads:/app/uploads
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dp2kbp3a-frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+    environment:
+      PUBLIC_BACKEND_URL: http://localhost:3000
+      JWT_SECRET: dp2kbp3a-super-secret-key-ganti-sebelum-deploy-2026
+      PORT: 5173
+      NODE_ENV: production
+
+volumes:
+  mysql_data:

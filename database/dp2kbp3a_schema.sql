@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS `users` (
 CREATE TABLE IF NOT EXISTS `laporan_kegiatan` (
   `id_laporan`          VARCHAR(36)  NOT NULL,
   `id_user`             VARCHAR(36)  NOT NULL,
+  `id_bidang`           VARCHAR(36)  DEFAULT NULL,
   `id_jenis`            VARCHAR(36)  NOT NULL,
   `tanggal_kegiatan`    DATE         NOT NULL,
   `lokasi_detail`       TEXT         NOT NULL,
@@ -94,14 +95,18 @@ CREATE TABLE IF NOT EXISTS `laporan_kegiatan` (
   `status_verifikasi`   ENUM('Pending','Disetujui','Ditolak','Revisi') NOT NULL DEFAULT 'Pending',
   `catatan_verifikator` TEXT,
   `id_verifikator`      VARCHAR(36)  DEFAULT NULL,
+  `deleted_at`          TIMESTAMP    DEFAULT NULL,
   `created_at`          TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
   `updated_at`          TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id_laporan`),
   KEY `idx_id_user`   (`id_user`),
+  KEY `idx_id_bidang_laporan` (`id_bidang`),
   KEY `idx_tanggal`   (`tanggal_kegiatan`),
   KEY `idx_status`    (`status_verifikasi`),
   KEY `idx_id_jenis`  (`id_jenis`),
+  KEY `idx_deleted_at` (`deleted_at`),
   CONSTRAINT `fk_lk_user`  FOREIGN KEY (`id_user`)  REFERENCES `users` (`id_user`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_lk_bidang` FOREIGN KEY (`id_bidang`) REFERENCES `bidang` (`id_bidang`) ON DELETE SET NULL,
   CONSTRAINT `fk_lk_jenis` FOREIGN KEY (`id_jenis`) REFERENCES `jenis_kegiatan` (`id_jenis`) ON DELETE RESTRICT,
   CONSTRAINT `fk_lk_verif` FOREIGN KEY (`id_verifikator`) REFERENCES `users` (`id_user`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

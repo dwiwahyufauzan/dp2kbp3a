@@ -43,6 +43,13 @@
       "when": 1778062344265,
       "tag": "0005_loud_romulus",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1781511099442,
+      "tag": "0006_whole_gwen_stacy",
+      "breakpoints": true
     }
   ]
 }

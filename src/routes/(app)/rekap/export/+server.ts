@@ -27,7 +27,11 @@ interface DetailRow {
     dokumentasi: DokEntry[]
 }
 
-function buildPeriodeTitle(periode: string): string {
+function buildPeriodeTitle(periode: string, startDate?: string, endDate?: string): string {
+    if (startDate && endDate) {
+        const formatTgl = (t: string) => new Date(t).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
+        return `Rentang Waktu: ${formatTgl(startDate)} s.d. ${formatTgl(endDate)}`
+    }
     if (!periode) return ""
     if (periode.length === 10) return `Harian — ${new Date(periode).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}`
     if (periode.length === 7) {
@@ -52,13 +56,21 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
     const api = createAPI(`session=${session}`)
     if (!session) return new Response("Tidak terautentikasi", { status: 401 })
 
-    const periode  = url.searchParams.get("periode")  ?? ""
-    const idBidang = url.searchParams.get("idBidang") ?? ""
-    const format   = url.searchParams.get("format") ?? "excel"
+    const periode   = url.searchParams.get("periode")   ?? ""
+    const idBidang  = url.searchParams.get("idBidang")  ?? ""
+    const idUser    = url.searchParams.get("idUser")    ?? ""
+    const kecamatan = url.searchParams.get("kecamatan") ?? ""
+    const startDate = url.searchParams.get("startDate") ?? ""
+    const endDate   = url.searchParams.get("endDate")   ?? ""
+    const format    = url.searchParams.get("format")    ?? "excel"
 
     const params = new URLSearchParams()
-    if (periode)  params.set("periode",  periode)
-    if (idBidang) params.set("idBidang", idBidang)
+    if (periode)   params.set("periode",   periode)
+    if (idBidang)  params.set("idBidang",  idBidang)
+    if (idUser)    params.set("idUser",    idUser)
+    if (kecamatan) params.set("kecamatan", kecamatan)
+    if (startDate) params.set("startDate", startDate)
+    if (endDate)   params.set("endDate",   endDate)
     const qs = params.size > 0 ? "?" + params.toString() : ""
 
     const [resRekap, resDetail] = await Promise.all([
@@ -70,8 +82,12 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
     const rekap: RekapRow[] = await resRekap.json()
     const detail: DetailRow[] = await resDetail.json()
 
-    const periodeTitle = buildPeriodeTitle(periode)
-    const titleText = periodeTitle ? `Rekapitulasi Kegiatan — ${periodeTitle}` : "Rekapitulasi Kegiatan Seluruh Periode"
+    const periodeTitle = buildPeriodeTitle(periode, startDate, endDate)
+    let subtitle = ""
+    if (kecamatan) subtitle += ` | Wilayah: ${kecamatan}`
+    if (idUser && rekap.length > 0) subtitle += ` | Petugas: ${rekap[0].namaLengkap}`
+
+    const titleText = periodeTitle ? `Rekapitulasi Kegiatan — ${periodeTitle}${subtitle}` : `Rekapitulasi Kegiatan Seluruh Periode${subtitle}`
     const generated = new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
 
     // ── EXCEL ──────────────────────────────────────────────────────────────────
@@ -138,11 +154,12 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
         })
         ;[5, 22, 28, 22, 22, 30, 10, 14, 42, 36].forEach((w, i) => (ws2.getColumn(i + 1).width = w))
 
+        const fileSuffix = startDate && endDate ? `${startDate}_to_${endDate}` : (periode || "All")
         const buffer = await wb.xlsx.writeBuffer()
         return new Response(buffer as unknown as BodyInit, {
             headers: {
                 "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                "Content-Disposition": `attachment; filename="Rekap_${periode || "All"}.xlsx"`,
+                "Content-Disposition": `attachment; filename="Rekap_${fileSuffix}.xlsx"`,
             }
         })
     }
@@ -155,7 +172,7 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
         doc.setFont("helvetica", "bold"); doc.setFontSize(15); doc.setTextColor(255, 255, 255)
         doc.text("DP2KBP3A — REKAPITULASI KEGIATAN", 14, 17)
         doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(161, 161, 170)
-        doc.text(periodeTitle ? periodeTitle.toUpperCase() : "SEMUA PERIODE", 14, 26)
+        doc.text(periodeTitle ? (periodeTitle + subtitle).toUpperCase() : ("SEMUA PERIODE" + subtitle).toUpperCase(), 14, 26)
         doc.text(`Dicetak: ${generated}`, 196, 26, { align: "right" })
         doc.setTextColor(0, 0, 0)
 
@@ -231,6 +248,7 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
             }
         }
 
+        const fileSuffix = startDate && endDate ? `${startDate}_to_${endDate}` : (periode || "All")
         const totalPages = doc.getNumberOfPages()
         for (let i = 1; i <= totalPages; i++) {
             doc.setPage(i); doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(161, 161, 170)
@@ -239,7 +257,7 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
 
         const buffer = doc.output("arraybuffer")
         return new Response(buffer as unknown as BodyInit, {
-            headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="Rekap_${periode || "All"}.pdf"` }
+            headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="Rekap_${fileSuffix}.pdf"` }
         })
     }
 
@@ -298,7 +316,7 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
             sections: [{
                 children: [
                     new Paragraph({ children: [new TextRun({ text: "REKAPITULASI KEGIATAN", bold: true, size: 32, color: ZINC })], alignment: AlignmentType.CENTER, spacing: { after: 80 } }),
-                    new Paragraph({ children: [new TextRun({ text: periodeTitle || "Seluruh Periode", size: 20, color: ZINC_500 })], alignment: AlignmentType.CENTER, spacing: { after: 80 } }),
+                    new Paragraph({ children: [new TextRun({ text: (periodeTitle || "Seluruh Periode") + subtitle, size: 20, color: ZINC_500 })], alignment: AlignmentType.CENTER, spacing: { after: 80 } }),
                     new Paragraph({ children: [new TextRun({ text: `Dicetak: ${generated}  |  DP2KBP3A`, size: 17, color: ZINC_500, italics: true })], alignment: AlignmentType.CENTER, spacing: { after: 400 } }),
                     new Paragraph({ children: [new TextRun({ text: "RINGKASAN PER PETUGAS", bold: true, size: 24, color: ZINC })], spacing: { before: 200, after: 200 } }),
                     new Table({ rows: summaryRows, width: { size: 100, type: WidthType.PERCENTAGE }, layout: TableLayoutType.FIXED }),
@@ -307,9 +325,10 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
             }]
         })
 
+        const fileSuffix = startDate && endDate ? `${startDate}_to_${endDate}` : (periode || "All")
         const buffer = await Packer.toBuffer(wordDoc)
         return new Response(buffer as unknown as BodyInit, {
-            headers: { "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "Content-Disposition": `attachment; filename="Rekap_${periode || "All"}.docx"` }
+            headers: { "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "Content-Disposition": `attachment; filename="Rekap_${fileSuffix}.docx"` }
         })
     }
 

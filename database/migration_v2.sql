@@ -46,7 +46,12 @@ CREATE TABLE IF NOT EXISTS `riwayat_revisi` (
     REFERENCES `users` (`id_user`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- 4. Update jenis_kegiatan yang sudah ada dengan id_bidang yang sesuai
+-- 4. Tambah kolom deleted_at untuk soft delete (jika belum ada)
+ALTER TABLE `laporan_kegiatan`
+  ADD COLUMN IF NOT EXISTS `deleted_at` TIMESTAMP DEFAULT NULL AFTER `id_verifikator`,
+  ADD INDEX IF NOT EXISTS `idx_deleted_at` (`deleted_at`);
+
+-- 5. Update jenis_kegiatan yang sudah ada dengan id_bidang yang sesuai
 -- (Jalankan ini hanya setelah bidang sudah di-seed!)
 -- Contoh manual — sesuaikan dengan id_bidang di database Anda:
 -- UPDATE jenis_kegiatan SET id_bidang = (SELECT id_bidang FROM bidang WHERE nama_bidang = 'Bidang Keluarga Berencana')

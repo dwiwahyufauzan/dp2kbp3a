@@ -9,12 +9,20 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
 		return new Response('Tidak terautentikasi', { status: 401 })
 	}
 
-	const periode  = url.searchParams.get('periode')  ?? ''
-	const idBidang = url.searchParams.get('idBidang') ?? ''
+	const periode   = url.searchParams.get('periode')   ?? ''
+	const idBidang  = url.searchParams.get('idBidang')  ?? ''
+	const idUser    = url.searchParams.get('idUser')    ?? ''
+	const kecamatan = url.searchParams.get('kecamatan') ?? ''
+	const startDate = url.searchParams.get('startDate') ?? ''
+	const endDate   = url.searchParams.get('endDate')   ?? ''
 
 	const params = new URLSearchParams()
-	if (periode)  params.set('periode',  periode)
-	if (idBidang) params.set('idBidang', idBidang)
+	if (periode)   params.set('periode',   periode)
+	if (idBidang)  params.set('idBidang',  idBidang)
+	if (idUser)    params.set('idUser',    idUser)
+	if (kecamatan) params.set('kecamatan', kecamatan)
+	if (startDate) params.set('startDate', startDate)
+	if (endDate)   params.set('endDate',   endDate)
 
 	const res = await api.get(`/rekap${params.size > 0 ? '?' + params.toString() : ''}`)
 	if (!res.ok) {
@@ -49,7 +57,8 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
 
 	const csv = [header.join(','), ...rows.map((r) => r.join(','))].join('\r\n')
 
-	const filename = `rekap${periode ? '-' + periode : ''}.csv`
+	const fileSuffix = startDate && endDate ? `${startDate}_to_${endDate}` : (periode || 'All')
+	const filename = `rekap-${fileSuffix}.csv`
 
 	return new Response(csv, {
 		headers: {

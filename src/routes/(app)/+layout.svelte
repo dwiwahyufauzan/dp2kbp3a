@@ -5,6 +5,8 @@
     import { fade } from 'svelte/transition';
     import type { LayoutData } from './$types';
     import { Search, Bell, Menu, PanelLeftClose, PanelLeft, Zap, X } from 'lucide-svelte';
+    import { onMount } from 'svelte';
+    import { toasts } from '$lib/stores/toasts.svelte';
 
     let { data, children }: { data: LayoutData; children: import('svelte').Snippet } = $props();
 
@@ -12,6 +14,53 @@
     let sidebarCollapsed = $state(false);
     let searchQuery = $state('');
     let showNotif = $state(false);
+
+    // Reactive states for notifications
+    let notifications = $state(data.notifikasi ?? []);
+    let unreadCount = $state(data.unreadNotif ?? 0);
+
+    $effect(() => {
+        notifications = data.notifikasi ?? [];
+        unreadCount = data.unreadNotif ?? 0;
+    });
+
+    onMount(() => {
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch('/api/notifikasi');
+                if (res.ok) {
+                    const resData = await res.json() as { list: any[], unread: number };
+                    const newList = resData.list ?? [];
+                    const newUnread = resData.unread ?? 0;
+
+                    // Find new unread notifications that aren't already in the list
+                    const existingIds = new Set(notifications.map(n => n.idNotif));
+                    const newNotifications = newList.filter(n => n.isRead === 0 && !existingIds.has(n.idNotif));
+
+                    if (newNotifications.length > 0) {
+                        newNotifications.forEach(n => {
+                            if (n.tipe === 'disetujui') {
+                                toasts.success(n.pesan);
+                            } else if (n.tipe === 'ditolak') {
+                                toasts.error(n.pesan);
+                            } else if (n.tipe === 'revisi') {
+                                toasts.warning(n.pesan);
+                            } else {
+                                toasts.info(n.pesan);
+                            }
+                        });
+                    }
+
+                    notifications = newList;
+                    unreadCount = newUnread;
+                }
+            } catch (err) {
+                console.error('Error polling notifications:', err);
+            }
+        }, 15000);
+
+        return () => clearInterval(interval);
+    });
 
     const initials = $derived(
         (data.user?.namaLengkap ?? '')
@@ -42,6 +91,8 @@
         showNotif = false;
         try {
             await fetch(`/api/notifikasi/${idNotif}/read`, { method: 'PATCH' });
+            notifications = notifications.map(n => n.idNotif === idNotif ? { ...n, isRead: 1 } : n);
+            unreadCount = Math.max(0, unreadCount - 1);
         } catch { /* abaikan */ }
         goto(href);
     }
@@ -123,9 +174,9 @@
                         class="p-2 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors relative"
                     >
                         <Bell class="w-5 h-5" />
-                        {#if data.unreadNotif > 0}
+                        {#if unreadCount > 0}
                             <span class="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-rose-500 rounded-full border border-white flex items-center justify-center">
-                                <span class="text-[9px] font-black text-white px-0.5">{data.unreadNotif > 9 ? '9+' : data.unreadNotif}</span>
+                                <span class="text-[9px] font-black text-white px-0.5">{unreadCount > 9 ? '9+' : unreadCount}</span>
                             </span>
                         {/if}
                     </button>
@@ -134,15 +185,15 @@
                         <div transition:fade={{duration: 150}} class="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-zinc-100 z-50 overflow-hidden text-left">
                             <div class="px-4 py-3 border-b border-zinc-100 bg-zinc-50/50 flex justify-between items-center">
                                 <h3 class="text-xs font-bold uppercase tracking-widest text-zinc-500">Notifikasi</h3>
-                                {#if data.unreadNotif > 0}
+                                {#if unreadCount > 0}
                                     <form method="POST" action="/api/notifikasi-read-all">
                                         <button type="submit" class="text-[10px] font-bold text-zinc-400 hover:text-zinc-700 uppercase tracking-widest transition-colors">Tandai Semua</button>
                                     </form>
                                 {/if}
                             </div>
                             <div class="max-h-[60vh] overflow-y-auto">
-                                {#if data.notifikasi && data.notifikasi.length > 0}
-                                    {#each data.notifikasi as notif (notif.idNotif)}
+                                {#if notifications && notifications.length > 0}
+                                    {#each notifications as notif (notif.idNotif)}
                                         {@const tipeColor = notif.tipe === 'disetujui' ? 'text-emerald-500 bg-emerald-50' : notif.tipe === 'ditolak' ? 'text-rose-500 bg-rose-50' : notif.tipe === 'revisi' ? 'text-amber-500 bg-amber-50' : 'text-zinc-500 bg-zinc-100'}
                                         <button
                                             type="button"

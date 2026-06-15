@@ -4,6 +4,7 @@ import { db } from '../db/connection'
 import { laporanKegiatan, users, jenisKegiatan } from '../db/schema'
 import { authPlugin } from '../plugins/auth'
 import type { UserPayload } from '../types'
+import { getCache, setCache } from '../utils/cache'
 
 export const statistikRoutes = new Elysia({ prefix: '/statistik' })
   .use(authPlugin)
@@ -25,7 +26,15 @@ export const statistikRoutes = new Elysia({ prefix: '/statistik' })
     async (ctx) => {
       const query = ctx.query
       const user = (ctx as unknown as { user: UserPayload }).user
-      const conditions: ReturnType<typeof sql>[] = []
+
+      // Check Cache
+      const cacheKey = `stats:${user.namaRole}:${user.idBidang ?? 'all'}:${query.tahun ?? 'none'}:${query.bulan ?? 'none'}:${query.idBidang ?? 'none'}`
+      const cached = getCache(cacheKey)
+      if (cached) {
+        return cached
+      }
+
+      const conditions: ReturnType<typeof sql>[] = [sql`${laporanKegiatan.deletedAt} IS NULL`]
 
       if (query.tahun) {
         conditions.push(sql`YEAR(${laporanKegiatan.tanggalKegiatan}) = ${Number(query.tahun)}`)
@@ -84,7 +93,7 @@ export const statistikRoutes = new Elysia({ prefix: '/statistik' })
         .groupBy(laporanKegiatan.idJenis, jenisKegiatan.namaKegiatan)
         .orderBy(sql`COUNT(${laporanKegiatan.idLaporan}) DESC`)
 
-      const trenConditions: ReturnType<typeof sql>[] = []
+      const trenConditions: ReturnType<typeof sql>[] = [sql`${laporanKegiatan.deletedAt} IS NULL`]
       const yearToUse = query.tahun ? Number(query.tahun) : new Date().getFullYear()
       trenConditions.push(sql`YEAR(${laporanKegiatan.tanggalKegiatan}) = ${yearToUse}`)
       
@@ -129,7 +138,7 @@ export const statistikRoutes = new Elysia({ prefix: '/statistik' })
         statusMap[row.statusVerifikasi] = Number(row.total)
       }
 
-      return {
+      const data = {
         totalLaporan: Number(totals?.totalLaporan ?? 0),
         totalPeserta: Number(totals?.totalPeserta ?? 0),
         totalLaki: Number(totals?.totalLaki ?? 0),
@@ -152,6 +161,9 @@ export const statistikRoutes = new Elysia({ prefix: '/statistik' })
           totalPeserta: Number(r.totalPeserta),
         })),
       }
+
+      setCache(cacheKey, data, 5 * 60_000) // Cache selama 5 menit
+      return data
     },
     {
       query: t.Object({

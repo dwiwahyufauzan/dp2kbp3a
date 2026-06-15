@@ -15,9 +15,10 @@ import { adminLokasiTugasRoutes } from './routes/admin/lokasi-tugas'
 import { profilRoutes } from './routes/profil'
 import { verifikasiRoutes } from './routes/verifikasi'
 import { notifikasiRoutes } from './routes/notifikasi'
+import { sanitizeObject } from './utils/sanitizer'
 
 // Pastikan direktori uploads tersedia
-const UPLOAD_DIR = join(import.meta.dir, '../uploads')
+const UPLOAD_DIR = Bun.env.UPLOAD_DIR || join(import.meta.dir, '../uploads')
 mkdirSync(UPLOAD_DIR, { recursive: true })
 
 const app = new Elysia()
@@ -29,6 +30,18 @@ const app = new Elysia()
       allowedHeaders: ['Content-Type'],
     })
   )
+  .onBeforeHandle((ctx) => {
+    // Set Security Headers
+    ctx.set.headers['X-Content-Type-Options'] = 'nosniff'
+    ctx.set.headers['X-Frame-Options'] = 'DENY'
+    ctx.set.headers['X-XSS-Protection'] = '1; mode=block'
+    ctx.set.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+
+    // Sanitize Request Body
+    if (ctx.body && typeof ctx.body === 'object') {
+      ctx.body = sanitizeObject(ctx.body)
+    }
+  })
   .use(jwtPlugin)
 
   // Health check

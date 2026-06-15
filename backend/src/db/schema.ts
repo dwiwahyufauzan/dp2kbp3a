@@ -104,6 +104,7 @@ export const laporanKegiatan = mysqlTable(
       () => users.idUser,
       { onDelete: 'set null' }
     ),
+    deletedAt: timestamp('deleted_at'),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
   },
@@ -112,6 +113,7 @@ export const laporanKegiatan = mysqlTable(
     idxIdBidang: index('idx_id_bidang_laporan').on(table.idBidang),
     idxTanggal: index('idx_tanggal').on(table.tanggalKegiatan),
     idxStatus: index('idx_status').on(table.statusVerifikasi),
+    idxDeletedAt: index('idx_deleted_at').on(table.deletedAt),
   })
 )
 

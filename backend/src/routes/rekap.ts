@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia'
-import { eq, sql, inArray, desc } from 'drizzle-orm'
+import { eq, sql, inArray, desc, and, isNull } from 'drizzle-orm'
 import { db } from '../db/connection'
-import { laporanKegiatan, users, bidang, jenisKegiatan, dokumentasiLaporan } from '../db/schema'
+import { laporanKegiatan, users, bidang, jenisKegiatan, dokumentasiLaporan, roles, lokasiTugas } from '../db/schema'
 import { authPlugin } from '../plugins/auth'
 import type { UserPayload } from '../types'
 
@@ -19,22 +19,52 @@ export const rekapRoutes = new Elysia({ prefix: '/rekap' })
     }
   })
 
-  // GET /rekap?periode=2026-05-15 (harian) atau 2026-05 (bulanan) atau 2026 (tahunan) & idBidang=xxx
+  // GET /rekap/petugas — daftar petugas aktif untuk dropdown filter
+  .get('/petugas', async () => {
+    return db
+      .select({
+        idUser: users.idUser,
+        namaLengkap: users.namaLengkap,
+      })
+      .from(users)
+      .leftJoin(roles, eq(users.idRole, roles.idRole))
+      .where(and(eq(roles.namaRole, 'petugas'), eq(users.statusAktif, 'y')))
+      .orderBy(users.namaLengkap)
+  })
+
+  // GET /rekap/kecamatan — daftar kecamatan unik untuk dropdown filter
+  .get('/kecamatan', async () => {
+    return db
+      .selectDistinct({
+        namaKecamatan: lokasiTugas.namaKecamatan,
+      })
+      .from(lokasiTugas)
+      .orderBy(lokasiTugas.namaKecamatan)
+  })
+
+  // GET /rekap?periode=2026-05-15 atau 2026-05 atau 2026 & idBidang=xxx & idUser=xxx & kecamatan=xxx & startDate=xxx & endDate=xxx
   .get(
     '/',
     async (ctx) => {
       const query = ctx.query
       const user = (ctx as unknown as { user: UserPayload }).user
-      const conditions = []
+      const conditions = [isNull(laporanKegiatan.deletedAt)]
 
       if (query.periode) {
         if (query.periode.length === 10) { // YYYY-MM-DD
-            conditions.push(sql`DATE(${laporanKegiatan.tanggalKegiatan}) = ${query.periode}`)
+          conditions.push(sql`DATE(${laporanKegiatan.tanggalKegiatan}) = ${query.periode}`)
         } else if (query.periode.length === 7) { // YYYY-MM
-            conditions.push(sql`DATE_FORMAT(${laporanKegiatan.tanggalKegiatan}, '%Y-%m') = ${query.periode}`)
+          conditions.push(sql`DATE_FORMAT(${laporanKegiatan.tanggalKegiatan}, '%Y-%m') = ${query.periode}`)
         } else if (query.periode.length === 4) { // YYYY
-            conditions.push(sql`DATE_FORMAT(${laporanKegiatan.tanggalKegiatan}, '%Y') = ${query.periode}`)
+          conditions.push(sql`DATE_FORMAT(${laporanKegiatan.tanggalKegiatan}, '%Y') = ${query.periode}`)
         }
+      }
+
+      if (query.startDate) {
+        conditions.push(sql`DATE(${laporanKegiatan.tanggalKegiatan}) >= ${query.startDate}`)
+      }
+      if (query.endDate) {
+        conditions.push(sql`DATE(${laporanKegiatan.tanggalKegiatan}) <= ${query.endDate}`)
       }
 
       if (user.namaRole === 'kepala_bidang') {
@@ -51,10 +81,11 @@ export const rekapRoutes = new Elysia({ prefix: '/rekap' })
         conditions.push(eq(laporanKegiatan.idUser, query.idUser))
       }
 
-      const whereClause =
-        conditions.length > 0
-          ? sql`${conditions.reduce((acc, cond, i) => (i === 0 ? cond : sql`${acc} AND ${cond}`))}`
-          : undefined
+      if (query.kecamatan) {
+        conditions.push(eq(lokasiTugas.namaKecamatan, query.kecamatan))
+      }
+
+      const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
       const rows = await db
         .select({
@@ -72,6 +103,7 @@ export const rekapRoutes = new Elysia({ prefix: '/rekap' })
         .from(laporanKegiatan)
         .leftJoin(users, eq(laporanKegiatan.idUser, users.idUser))
         .leftJoin(bidang, eq(users.idBidang, bidang.idBidang))
+        .leftJoin(lokasiTugas, eq(users.idLokasi, lokasiTugas.idLokasi))
         .where(whereClause)
         .groupBy(laporanKegiatan.idUser, users.namaLengkap, users.idBidang, bidang.namaBidang)
         .orderBy(users.namaLengkap)
@@ -83,6 +115,9 @@ export const rekapRoutes = new Elysia({ prefix: '/rekap' })
         periode: t.Optional(t.String()),
         idBidang: t.Optional(t.String()),
         idUser: t.Optional(t.String()),
+        kecamatan: t.Optional(t.String()),
+        startDate: t.Optional(t.String()),
+        endDate: t.Optional(t.String()),
       }),
     }
   )
@@ -93,7 +128,7 @@ export const rekapRoutes = new Elysia({ prefix: '/rekap' })
     async (ctx) => {
       const query = ctx.query
       const user = (ctx as unknown as { user: UserPayload }).user
-      const conditions = []
+      const conditions = [isNull(laporanKegiatan.deletedAt)]
 
       if (query.periode) {
         if (query.periode.length === 10) {
@@ -103,6 +138,13 @@ export const rekapRoutes = new Elysia({ prefix: '/rekap' })
         } else if (query.periode.length === 4) {
           conditions.push(sql`DATE_FORMAT(${laporanKegiatan.tanggalKegiatan}, '%Y') = ${query.periode}`)
         }
+      }
+
+      if (query.startDate) {
+        conditions.push(sql`DATE(${laporanKegiatan.tanggalKegiatan}) >= ${query.startDate}`)
+      }
+      if (query.endDate) {
+        conditions.push(sql`DATE(${laporanKegiatan.tanggalKegiatan}) <= ${query.endDate}`)
       }
 
       if (user.namaRole === 'kepala_bidang') {
@@ -115,10 +157,15 @@ export const rekapRoutes = new Elysia({ prefix: '/rekap' })
         conditions.push(eq(laporanKegiatan.idBidang, query.idBidang))
       }
 
-      const whereClause =
-        conditions.length > 0
-          ? sql`${conditions.reduce((acc, cond, i) => (i === 0 ? cond : sql`${acc} AND ${cond}`))}`
-          : undefined
+      if (query.idUser) {
+        conditions.push(eq(laporanKegiatan.idUser, query.idUser))
+      }
+
+      if (query.kecamatan) {
+        conditions.push(eq(lokasiTugas.namaKecamatan, query.kecamatan))
+      }
+
+      const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
       const rows = await db
         .select({
@@ -137,6 +184,7 @@ export const rekapRoutes = new Elysia({ prefix: '/rekap' })
         .leftJoin(users, eq(laporanKegiatan.idUser, users.idUser))
         .leftJoin(bidang, eq(users.idBidang, bidang.idBidang))
         .leftJoin(jenisKegiatan, eq(laporanKegiatan.idJenis, jenisKegiatan.idJenis))
+        .leftJoin(lokasiTugas, eq(users.idLokasi, lokasiTugas.idLokasi))
         .where(whereClause)
         .orderBy(users.namaLengkap, desc(laporanKegiatan.tanggalKegiatan))
 
@@ -160,6 +208,10 @@ export const rekapRoutes = new Elysia({ prefix: '/rekap' })
       query: t.Object({
         periode: t.Optional(t.String()),
         idBidang: t.Optional(t.String()),
+        idUser: t.Optional(t.String()),
+        kecamatan: t.Optional(t.String()),
+        startDate: t.Optional(t.String()),
+        endDate: t.Optional(t.String()),
       }),
     }
   )

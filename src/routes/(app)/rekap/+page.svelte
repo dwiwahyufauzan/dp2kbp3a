@@ -21,13 +21,18 @@
     const rekap = $derived(data.rekap as RekapRow[]);
     let periodeValue = $state(untrack(() => data.periode ?? ''));
     let idBidang = $state(untrack(() => data.idBidang ?? ''));
+    let idUser = $state(untrack(() => data.idUser ?? ''));
+    let kecamatan = $state(untrack(() => data.kecamatan ?? ''));
+    let startDate = $state(untrack(() => data.startDate ?? ''));
+    let endDate = $state(untrack(() => data.endDate ?? ''));
 
     // Determine current type of periode
-    let filterType = $state<'harian' | 'bulanan' | 'tahunan'>('bulanan');
+    let filterType = $state<'harian' | 'bulanan' | 'tahunan' | 'range'>('bulanan');
 
     $effect(() => {
         untrack(() => {
-            if (periodeValue.length === 10) filterType = 'harian';
+            if (data.startDate || data.endDate) filterType = 'range';
+            else if (periodeValue.length === 10) filterType = 'harian';
             else if (periodeValue.length === 7) filterType = 'bulanan';
             else if (periodeValue.length === 4) filterType = 'tahunan';
         });
@@ -35,22 +40,40 @@
 
     function applyFilter() {
         const params = new URLSearchParams();
-        if (periodeValue) params.set('periode', periodeValue);
+        if (filterType === 'range') {
+            if (startDate) params.set('startDate', startDate);
+            if (endDate) params.set('endDate', endDate);
+        } else {
+            if (periodeValue) params.set('periode', periodeValue);
+        }
         if (idBidang) params.set('idBidang', idBidang);
+        if (idUser) params.set('idUser', idUser);
+        if (kecamatan) params.set('kecamatan', kecamatan);
         goto(`/rekap?${params.toString()}`);
     }
 
     function resetFilter() {
         periodeValue = '';
         idBidang = '';
+        idUser = '';
+        kecamatan = '';
+        startDate = '';
+        endDate = '';
         filterType = 'bulanan';
         goto('/rekap');
     }
 
     function handleExport(format: 'excel' | 'pdf' | 'word' | 'csv') {
         const params = new URLSearchParams();
-        if (periodeValue) params.set('periode', periodeValue);
+        if (filterType === 'range') {
+            if (startDate) params.set('startDate', startDate);
+            if (endDate) params.set('endDate', endDate);
+        } else {
+            if (periodeValue) params.set('periode', periodeValue);
+        }
         if (idBidang) params.set('idBidang', idBidang);
+        if (idUser) params.set('idUser', idUser);
+        if (kecamatan) params.set('kecamatan', kecamatan);
         
         if (format === 'csv') {
             window.location.href = `/rekap/export.csv?${params.toString()}`;
@@ -62,6 +85,8 @@
 
     function handleTypeChange() {
         periodeValue = ''; // reset value when type changes
+        startDate = '';
+        endDate = '';
     }
 
     const totalAll = $derived(rekap.reduce((s, r) => s + Number(r.totalLaporan), 0));
@@ -107,8 +132,9 @@
     </header>
 
     <!-- FILTER BAR: ULTRA CLEAN -->
-    <div class="grid grid-cols-1 md:grid-cols-12 items-end gap-3 bg-zinc-50/50 p-4 rounded-2xl border border-zinc-100">
-        <div class="md:col-span-2">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 bg-zinc-50/50 p-6 rounded-3xl border border-zinc-100">
+        <!-- Row 1 -->
+        <div class="md:col-span-3">
             <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5 ml-1">Jenis Filter</label>
             <select
                 bind:value={filterType}
@@ -118,10 +144,11 @@
                 <option value="harian">Harian</option>
                 <option value="bulanan">Bulanan</option>
                 <option value="tahunan">Tahunan</option>
+                <option value="range">Rentang Tanggal (Kustom)</option>
             </select>
         </div>
 
-        <div class="md:col-span-3">
+        <div class="md:col-span-5">
             <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5 ml-1">Data Waktu</label>
             {#if filterType === 'harian'}
                 <input
@@ -135,7 +162,7 @@
                     bind:value={periodeValue}
                     class="w-full px-4 py-2.5 bg-white border border-zinc-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-zinc-900/5 outline-none transition-all"
                 />
-            {:else}
+            {:else if filterType === 'tahunan'}
                 <input
                     type="number"
                     min="2000" max="2100"
@@ -143,6 +170,20 @@
                     bind:value={periodeValue}
                     class="w-full px-4 py-2.5 bg-white border border-zinc-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-zinc-900/5 outline-none transition-all font-mono"
                 />
+            {:else}
+                <div class="flex items-center gap-2">
+                    <input
+                        type="date"
+                        bind:value={startDate}
+                        class="w-full px-4 py-2.5 bg-white border border-zinc-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-zinc-900/5 outline-none transition-all"
+                    />
+                    <span class="text-zinc-400 text-xs font-semibold">s.d.</span>
+                    <input
+                        type="date"
+                        bind:value={endDate}
+                        class="w-full px-4 py-2.5 bg-white border border-zinc-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-zinc-900/5 outline-none transition-all"
+                    />
+                </div>
             {/if}
         </div>
 
@@ -150,7 +191,7 @@
             <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5 ml-1">Bidang Kerja</label>
             <select
                 bind:value={idBidang}
-                class="w-full px-4 py-2.5 bg-white border border-zinc-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-zinc-900/5 outline-none transition-all"
+                class="w-full px-4 py-2.5 bg-white border border-zinc-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-zinc-900/5 outline-none transition-all cursor-pointer"
             >
                 <option value="">Semua Bidang</option>
                 {#each data.bidang as b}
@@ -159,17 +200,44 @@
             </select>
         </div>
 
-        <div class="md:col-span-3 flex items-center gap-2 h-[42px]">
+        <!-- Row 2 -->
+        <div class="md:col-span-5">
+            <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5 ml-1">Petugas Lapangan</label>
+            <select
+                bind:value={idUser}
+                class="w-full px-4 py-2.5 bg-white border border-zinc-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-zinc-900/5 outline-none transition-all cursor-pointer"
+            >
+                <option value="">Semua Petugas</option>
+                {#each data.petugasList as p}
+                    <option value={p.idUser}>{p.namaLengkap}</option>
+                {/each}
+            </select>
+        </div>
+
+        <div class="md:col-span-4">
+            <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5 ml-1">Wilayah Kecamatan</label>
+            <select
+                bind:value={kecamatan}
+                class="w-full px-4 py-2.5 bg-white border border-zinc-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-zinc-900/5 outline-none transition-all cursor-pointer"
+            >
+                <option value="">Semua Kecamatan</option>
+                {#each data.kecamatanList as k}
+                    <option value={k.namaKecamatan}>{k.namaKecamatan}</option>
+                {/each}
+            </select>
+        </div>
+
+        <div class="md:col-span-3 flex items-center gap-2 pt-5">
             <button
                 onclick={applyFilter}
-                class="flex-1 flex items-center justify-center gap-2 h-full bg-zinc-900 border border-zinc-900 text-white text-sm font-bold rounded-xl hover:bg-zinc-800 transition-all shadow-md"
+                class="flex-1 flex items-center justify-center gap-2 py-2.5 bg-zinc-900 border border-zinc-900 text-white text-sm font-bold rounded-xl hover:bg-zinc-800 transition-all shadow-md"
             >
-                <Filter class="w-4 h-4" /> Terapkan Seleksi
+                <Filter class="w-4 h-4" /> Terapkan
             </button>
             <button
                 onclick={resetFilter}
-                disabled={!periodeValue && !idBidang}
-                class="px-4 py-2 bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50 h-full text-sm font-semibold rounded-xl transition-all whitespace-nowrap flex items-center justify-center gap-2 disabled:opacity-50 disabled:hover:bg-white"
+                disabled={!periodeValue && !idBidang && !idUser && !kecamatan && !startDate && !endDate}
+                class="px-4 py-2.5 bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50 text-sm font-semibold rounded-xl transition-all whitespace-nowrap flex items-center justify-center gap-2 disabled:opacity-50 disabled:hover:bg-white"
             >
                 <RotateCcw class="w-4 h-4" /> Reset
             </button>

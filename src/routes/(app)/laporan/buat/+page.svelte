@@ -83,7 +83,26 @@
     <form
         method="POST"
         enctype="multipart/form-data"
-        use:enhance={() => {
+        use:enhance={({ formData, cancel }) => {
+            const jpStr = formData.get('jumlahPeserta');
+            const jlVal = formData.get('jumlahLaki');
+            const jpmpVal = formData.get('jumlahPerempuan');
+
+            const jp = jpStr ? parseInt(jpStr.toString(), 10) || 0 : 0;
+            const hasLaki = jlVal !== null && jlVal !== '';
+            const hasPerempuan = jpmpVal !== null && jpmpVal !== '';
+
+            if (hasLaki || hasPerempuan) {
+                const jl = hasLaki ? parseInt(jlVal.toString(), 10) || 0 : 0;
+                const jpm = hasPerempuan ? parseInt(jpmpVal.toString(), 10) || 0 : 0;
+
+                if (jl + jpm !== jp) {
+                    toasts.error(`Jumlah Laki-laki (${jl}) + Perempuan (${jpm}) harus sama dengan Total Peserta (${jp})`);
+                    cancel();
+                    return;
+                }
+            }
+
             loading = true;
             return async ({ update }) => { await update(); loading = false; };
         }}

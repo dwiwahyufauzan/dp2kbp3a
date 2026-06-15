@@ -1,14 +1,16 @@
 import { Elysia, t } from 'elysia'
-import { eq, desc, count, and, like, SQL } from 'drizzle-orm'
+import { eq, desc, count, and, like, SQL, isNull } from 'drizzle-orm'
 import { join } from 'node:path'
 import { mkdir, unlink } from 'node:fs/promises'
 import { db } from '../db/connection'
-import { laporanKegiatan, users, jenisKegiatan, dokumentasiLaporan, notifikasi, roles, riwayatRevisi, bidang } from '../db/schema'
+import { laporanKegiatan, users, jenisKegiatan, dokumentasiLaporan, notifikasi, roles, riwayatRevisi, bidang, lokasiTugas } from '../db/schema'
 import { authPlugin } from '../plugins/auth'
 import { catatLog } from './log-aktivitas'
 import type { UserPayload } from '../types'
+import { checkRateLimit, getClientIP } from '../plugins/rateLimit'
+import { clearCachePattern } from '../utils/cache'
 
-const UPLOAD_DIR = join(import.meta.dir, '../../uploads')
+const UPLOAD_DIR = Bun.env.UPLOAD_DIR || join(import.meta.dir, '../../uploads')
 
 // MIME types yang diizinkan untuk upload dokumentasi
 const ALLOWED_MIME: Record<string, string> = {
@@ -42,7 +44,10 @@ export const laporanRoutes = new Elysia({ prefix: '/laporan' })
       return { count: 0 }
     }
 
-    const conditions: SQL[] = [eq(laporanKegiatan.statusVerifikasi, 'Pending')]
+    const conditions: SQL[] = [
+      eq(laporanKegiatan.statusVerifikasi, 'Pending'),
+      isNull(laporanKegiatan.deletedAt)
+    ]
     // Kepala bidang: hanya hitung pending di bidangnya
     if (u.namaRole === 'kepala_bidang') {
       if (u.idBidang) {
@@ -64,17 +69,17 @@ export const laporanRoutes = new Elysia({ prefix: '/laporan' })
     const u = (ctx as unknown as { user: UserPayload }).user
     const query = (ctx as unknown as { query: Record<string, string> }).query
 
-    const page  = Math.max(1, parseInt(query.page  ?? '1',  10) || 1)
+    const page = Math.max(1, parseInt(query.page ?? '1', 10) || 1)
     const limit = Math.min(100, Math.max(1, parseInt(query.limit ?? '15', 10) || 15))
     const offset = (page - 1) * limit
     const status = query.status ?? ''
     const search = query.search ?? ''
     const idBidang = query.idBidang ?? ''
     const idJenis = query.idJenis ?? ''
- 
+
     // Susun kondisi WHERE dinamis
-    const conditions: SQL[] = []
- 
+    const conditions: SQL[] = [isNull(laporanKegiatan.deletedAt)]
+
     if (u.namaRole === 'petugas') {
       // Petugas: hanya lihat laporannya sendiri
       conditions.push(eq(laporanKegiatan.idUser, u.idUser))
@@ -87,7 +92,7 @@ export const laporanRoutes = new Elysia({ prefix: '/laporan' })
       }
     }
     // Admin & pimpinan: lihat semua
- 
+
     if (status) {
       conditions.push(eq(laporanKegiatan.statusVerifikasi, status as 'Pending' | 'Disetujui' | 'Ditolak' | 'Revisi'))
     }
@@ -100,7 +105,7 @@ export const laporanRoutes = new Elysia({ prefix: '/laporan' })
     if (idJenis) {
       conditions.push(eq(laporanKegiatan.idJenis, idJenis))
     }
- 
+
     const where = conditions.length > 0 ? and(...conditions) : undefined
 
     const baseSelect = {
@@ -170,6 +175,8 @@ export const laporanRoutes = new Elysia({ prefix: '/laporan' })
         catatanVerifikator: laporanKegiatan.catatanVerifikator,
         idUser: laporanKegiatan.idUser,
         namaLengkap: users.namaLengkap,
+        namaKecamatan: lokasiTugas.namaKecamatan,
+        namaDesa: lokasiTugas.namaDesa,
         idVerifikator: laporanKegiatan.idVerifikator,
         createdAt: laporanKegiatan.createdAt,
         updatedAt: laporanKegiatan.updatedAt,
@@ -178,7 +185,8 @@ export const laporanRoutes = new Elysia({ prefix: '/laporan' })
       .leftJoin(users, eq(laporanKegiatan.idUser, users.idUser))
       .leftJoin(jenisKegiatan, eq(laporanKegiatan.idJenis, jenisKegiatan.idJenis))
       .leftJoin(bidang, eq(laporanKegiatan.idBidang, bidang.idBidang))
-      .where(eq(laporanKegiatan.idLaporan, params.id))
+      .leftJoin(lokasiTugas, eq(users.idLokasi, lokasiTugas.idLokasi))
+      .where(and(eq(laporanKegiatan.idLaporan, params.id), isNull(laporanKegiatan.deletedAt)))
       .limit(1)
 
     if (!row) {
@@ -228,6 +236,14 @@ export const laporanRoutes = new Elysia({ prefix: '/laporan' })
       const { body, set } = ctx
       const u = (ctx as unknown as { user: UserPayload }).user
 
+      // Rate limiting: 15 per menit
+      const ip = getClientIP(ctx.request)
+      const rl = checkRateLimit(ip, 15)
+      if (!rl.allowed) {
+        set.status = 429
+        return { message: `Terlalu banyak percobaan pengiriman laporan. Silakan coba lagi dalam ${rl.retryAfterSec} detik.` }
+      }
+
       if (!['petugas', 'admin'].includes(u.namaRole)) {
         set.status = 403
         return { message: 'Hanya petugas atau admin yang dapat menginput laporan' }
@@ -275,8 +291,7 @@ export const laporanRoutes = new Elysia({ prefix: '/laporan' })
         deskripsiKegiatan: body.deskripsiKegiatan?.trim(),
       })
 
-      const ip = ctx.request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined
-      await catatLog({ idUser: u.idUser, aksi: 'BUAT_LAPORAN', keterangan: `Laporan baru: ${idLaporan}`, ipAddress: ip }).catch(() => {})
+      await catatLog({ idUser: u.idUser, aksi: 'BUAT_LAPORAN', keterangan: `Laporan baru: ${idLaporan}`, ipAddress: ip }).catch(() => { })
 
       // Kirim notifikasi ke kepala_bidang di bidang yang dipilih + admin
       try {
@@ -305,6 +320,7 @@ export const laporanRoutes = new Elysia({ prefix: '/laporan' })
         )
       } catch { /* notifikasi tidak boleh gagalkan laporan */ }
 
+      clearCachePattern('stats:')
       return { idLaporan, message: 'Laporan berhasil disimpan' }
     },
     {
@@ -332,7 +348,7 @@ export const laporanRoutes = new Elysia({ prefix: '/laporan' })
       const [existing] = await db
         .select()
         .from(laporanKegiatan)
-        .where(eq(laporanKegiatan.idLaporan, params.id))
+        .where(and(eq(laporanKegiatan.idLaporan, params.id), isNull(laporanKegiatan.deletedAt)))
         .limit(1)
 
       if (!existing) {
@@ -402,6 +418,7 @@ export const laporanRoutes = new Elysia({ prefix: '/laporan' })
         })
         .where(eq(laporanKegiatan.idLaporan, params.id))
 
+      clearCachePattern('stats:')
       return { message: 'Laporan berhasil diperbarui' }
     },
     {
@@ -433,7 +450,7 @@ export const laporanRoutes = new Elysia({ prefix: '/laporan' })
       const [existing] = await db
         .select({ idLaporan: laporanKegiatan.idLaporan, statusVerifikasi: laporanKegiatan.statusVerifikasi, idBidang: laporanKegiatan.idBidang, idUser: laporanKegiatan.idUser })
         .from(laporanKegiatan)
-        .where(eq(laporanKegiatan.idLaporan, params.id))
+        .where(and(eq(laporanKegiatan.idLaporan, params.id), isNull(laporanKegiatan.deletedAt)))
         .limit(1)
 
       if (!existing) {
@@ -485,8 +502,9 @@ export const laporanRoutes = new Elysia({ prefix: '/laporan' })
       } catch { /* abaikan */ }
 
       const ip2 = ctx.request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined
-      await catatLog({ idUser: u.idUser, aksi: 'VERIFIKASI_LAPORAN', keterangan: `Laporan ${params.id} → ${body.statusVerifikasi}`, ipAddress: ip2 }).catch(() => {})
+      await catatLog({ idUser: u.idUser, aksi: 'VERIFIKASI_LAPORAN', keterangan: `Laporan ${params.id} → ${body.statusVerifikasi}`, ipAddress: ip2 }).catch(() => { })
 
+      clearCachePattern('stats:')
       return { message: 'Verifikasi berhasil disimpan' }
     },
     {
@@ -504,10 +522,18 @@ export const laporanRoutes = new Elysia({ prefix: '/laporan' })
       const { params, body, set } = ctx
       const u = (ctx as unknown as { user: UserPayload }).user
 
+      // Rate limiting: 20 upload per menit
+      const ip = getClientIP(ctx.request)
+      const rl = checkRateLimit(ip, 20)
+      if (!rl.allowed) {
+        set.status = 429
+        return { message: `Terlalu banyak unggahan file. Silakan coba lagi dalam ${rl.retryAfterSec} detik.` }
+      }
+
       const [existing] = await db
         .select({ idUser: laporanKegiatan.idUser })
         .from(laporanKegiatan)
-        .where(eq(laporanKegiatan.idLaporan, params.id))
+        .where(and(eq(laporanKegiatan.idLaporan, params.id), isNull(laporanKegiatan.deletedAt)))
         .limit(1)
 
       if (!existing) {
@@ -530,17 +556,44 @@ export const laporanRoutes = new Elysia({ prefix: '/laporan' })
       }
 
       await mkdir(UPLOAD_DIR, { recursive: true })
-      const allowedExt = ALLOWED_MIME[file.type]
-      const ext = allowedExt || (file.name.split('.').pop() ?? 'bin').toLowerCase().replace(/[^a-z0-9]/g, '')
-      const filename = `${crypto.randomUUID()}.${ext}`
-      await Bun.write(`${UPLOAD_DIR}/${filename}`, file)
+      const isImage = file.type.startsWith('image/')
+      let filename = ''
+      let finalTipeFile = file.type
+
+      if (isImage) {
+        filename = `${crypto.randomUUID()}.jpg`
+        finalTipeFile = 'image/jpeg'
+        try {
+          const sharp = (await import('sharp')).default
+          const buffer = Buffer.from(await file.arrayBuffer())
+          await sharp(buffer)
+            .resize(1200, 1200, {
+              fit: 'inside',
+              withoutEnlargement: true,
+            })
+            .jpeg({ quality: 80 })
+            .toFile(join(UPLOAD_DIR, filename))
+        } catch (err) {
+          console.error('Sharp compression failed, falling back to raw upload:', err)
+          const allowedExt = ALLOWED_MIME[file.type]
+          const ext = allowedExt || (file.name.split('.').pop() ?? 'bin').toLowerCase().replace(/[^a-z0-9]/g, '')
+          filename = `${crypto.randomUUID()}.${ext}`
+          finalTipeFile = file.type
+          await Bun.write(`${UPLOAD_DIR}/${filename}`, file)
+        }
+      } else {
+        const allowedExt = ALLOWED_MIME[file.type]
+        const ext = allowedExt || (file.name.split('.').pop() ?? 'bin').toLowerCase().replace(/[^a-z0-9]/g, '')
+        filename = `${crypto.randomUUID()}.${ext}`
+        await Bun.write(`${UPLOAD_DIR}/${filename}`, file)
+      }
 
       const idDokumentasi = crypto.randomUUID()
       await db.insert(dokumentasiLaporan).values({
         idDokumentasi,
         idLaporan: params.id,
         filePath: filename,
-        tipeFile: file.type,
+        tipeFile: finalTipeFile,
         namaAsli: file.name,
       })
 
@@ -582,7 +635,7 @@ export const laporanRoutes = new Elysia({ prefix: '/laporan' })
     return { message: 'Dokumentasi berhasil dihapus' }
   })
 
-  // DELETE /laporan/:id — hapus laporan (admin only)
+  // DELETE /laporan/:id — hapus laporan (admin only, soft-delete)
   .delete('/:id', async (ctx) => {
     const { params, set } = ctx
     const u = (ctx as unknown as { user: UserPayload }).user
@@ -595,25 +648,18 @@ export const laporanRoutes = new Elysia({ prefix: '/laporan' })
     const [existing] = await db
       .select({ idLaporan: laporanKegiatan.idLaporan })
       .from(laporanKegiatan)
-      .where(eq(laporanKegiatan.idLaporan, params.id))
+      .where(and(eq(laporanKegiatan.idLaporan, params.id), isNull(laporanKegiatan.deletedAt)))
       .limit(1)
 
     if (!existing) { set.status = 404; return { message: 'Laporan tidak ditemukan' } }
 
-    // Ambil list file dokumentasi sebelum data di-delete
-    const files = await db
-      .select({ filePath: dokumentasiLaporan.filePath })
-      .from(dokumentasiLaporan)
-      .where(eq(dokumentasiLaporan.idLaporan, params.id))
+    await db
+      .update(laporanKegiatan)
+      .set({ deletedAt: new Date() })
+      .where(eq(laporanKegiatan.idLaporan, params.id))
 
-    for (const file of files) {
-      try {
-        await unlink(join(UPLOAD_DIR, file.filePath))
-      } catch { /* abaikan jika file tidak ada */ }
-    }
-
-    await db.delete(laporanKegiatan).where(eq(laporanKegiatan.idLaporan, params.id))
     const ip3 = ctx.request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined
-    await catatLog({ idUser: u.idUser, aksi: 'HAPUS_LAPORAN', keterangan: `Laporan ${params.id} dihapus`, ipAddress: ip3 }).catch(() => {})
+    await catatLog({ idUser: u.idUser, aksi: 'HAPUS_LAPORAN', keterangan: `Laporan ${params.id} dihapus (soft-delete)`, ipAddress: ip3 }).catch(() => { })
+    clearCachePattern('stats:')
     return { message: 'Laporan berhasil dihapus' }
   })

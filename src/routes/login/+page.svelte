@@ -1,7 +1,8 @@
-﻿<script lang="ts">
+<script lang="ts">
     import { enhance } from '$app/forms';
     import type { ActionData } from './$types';
-    import { Activity, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-svelte';
+    import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-svelte';
+    import logo from '$lib/assets/logo.jpeg';
 
     let { form }: { form: ActionData } = $props();
 
@@ -18,10 +19,10 @@
         
         <!-- Logo & Header -->
         <div class="text-center mb-10">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-xl shadow-zinc-900/50 mb-5 relative">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-xl shadow-zinc-900/50 mb-5 relative overflow-hidden">
                 <!-- Glowing element -->
                 <div class="absolute inset-0 bg-white/5 blur-xl rounded-full"></div>
-                <Activity class="w-8 h-8 text-zinc-100 relative z-10" />
+                <img src={logo} alt="Logo DP2KBP3A" class="w-full h-full object-cover relative z-10" />
             </div>
             <h1 class="text-2xl font-extrabold text-white tracking-tight">Console</h1>
             <p class="text-zinc-500 text-xs mt-2 uppercase tracking-[0.2em] font-bold font-mono">DP2KBP3A Monitor</p>

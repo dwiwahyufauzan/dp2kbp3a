@@ -5,7 +5,7 @@
     import type { ActionData, PageData } from './$types';
     import type { LaporanDetail, DokumentasiLaporan } from '$lib/types';
     import { untrack } from 'svelte';
-    import { ChevronLeft, Calendar, User, MapPin, Users, FileText, CheckCircle2, FileX2, Clock, Trash2, Edit2, X, MessageSquare, Download, Check, AlertCircle, History, FileArchive, FileSpreadsheet, ChevronDown, ChevronUp, LayoutGrid } from 'lucide-svelte';
+    import { ChevronLeft, Calendar, User, MapPin, Users, FileText, CheckCircle2, FileX2, Clock, Trash2, Edit2, X, MessageSquare, Download, Check, AlertCircle, History, FileArchive, FileSpreadsheet, ChevronDown, ChevronUp, LayoutGrid, FileDigit } from 'lucide-svelte';
     import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 
     let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -113,6 +113,63 @@
             });
         }
     });
+
+    function getDiffs(riwayat: any, idx: number) {
+        if (!riwayat.dataLama) return [];
+        
+        let stateAfter: Record<string, any> = {};
+        if (idx === 0) {
+            stateAfter = {
+                idBidang: laporan.idBidang,
+                idJenis: laporan.idJenis,
+                tanggalKegiatan: laporan.tanggalKegiatan,
+                lokasiDetail: laporan.lokasiDetail,
+                jumlahPeserta: laporan.jumlahPeserta,
+                jumlahLaki: laporan.jumlahLaki,
+                jumlahPerempuan: laporan.jumlahPerempuan,
+                deskripsiKegiatan: laporan.deskripsiKegiatan
+            };
+        } else {
+            const nextNewer = laporan.riwayatRevisi ? laporan.riwayatRevisi[idx - 1] : null;
+            stateAfter = nextNewer?.dataLama ?? {};
+        }
+
+        const dataLama = riwayat.dataLama;
+        const diffs = [];
+
+        const fields = [
+            { key: 'idBidang', label: 'Bidang', format: (id: any) => data.bidangList?.find(b => b.idBidang === id)?.namaBidang ?? String(id ?? '-') },
+            { key: 'idJenis', label: 'Jenis Kegiatan', format: (id: any) => data.jenisKegiatan?.find(k => k.idJenis === id)?.namaKegiatan ?? String(id ?? '-') },
+            { key: 'tanggalKegiatan', label: 'Tanggal', format: (v: any) => v ? formatTanggal(String(v)) : '-' },
+            { key: 'lokasiDetail', label: 'Lokasi Detail', format: (v: any) => String(v ?? '-') },
+            { key: 'jumlahPeserta', label: 'Total Peserta', format: (v: any) => v !== undefined && v !== null ? `${v} Orang` : '-' },
+            { key: 'jumlahLaki', label: 'Peserta Laki-laki', format: (v: any) => v !== null && v !== undefined ? `${v} Orang` : '-' },
+            { key: 'jumlahPerempuan', label: 'Peserta Perempuan', format: (v: any) => v !== null && v !== undefined ? `${v} Orang` : '-' },
+            { key: 'deskripsiKegiatan', label: 'Deskripsi', format: (v: any) => String(v ?? '-') },
+        ];
+
+        for (const field of fields) {
+            let valBefore = dataLama[field.key];
+            let valAfter = stateAfter[field.key];
+            
+            let valBeforeComp = valBefore;
+            let valAfterComp = valAfter;
+            if (field.key === 'tanggalKegiatan') {
+                if (valBeforeComp) valBeforeComp = new Date(valBeforeComp).toISOString().split('T')[0];
+                if (valAfterComp) valAfterComp = new Date(valAfterComp).toISOString().split('T')[0];
+            }
+
+            if (String(valBeforeComp ?? '') !== String(valAfterComp ?? '')) {
+                diffs.push({
+                    label: field.label,
+                    before: field.format(valBefore),
+                    after: field.format(valAfter)
+                });
+            }
+        }
+
+        return diffs;
+    }
 </script>
 
 <svelte:head><title>Detail Laporan — DP2KBP3A</title></svelte:head>
@@ -162,6 +219,20 @@
 
         <!-- ACTIONS -->
         <div class="flex items-center gap-3 shrink-0">
+            {#if !editMode}
+                <a
+                    href={`/laporan/${laporan.idLaporan}/export?format=word`}
+                    class="px-4 py-2.5 border border-zinc-200 text-blue-600 bg-white text-xs font-bold rounded-xl hover:bg-blue-50 transition-all shadow-sm flex items-center gap-2"
+                >
+                    <FileText class="w-4 h-4" /> Word
+                </a>
+                <a
+                    href={`/laporan/${laporan.idLaporan}/export?format=pdf`}
+                    class="px-4 py-2.5 border border-zinc-200 text-rose-600 bg-white text-xs font-bold rounded-xl hover:bg-rose-50 transition-all shadow-sm flex items-center gap-2"
+                >
+                    <FileDigit class="w-4 h-4" /> PDF
+                </a>
+            {/if}
             {#if canEdit && !editMode}
                 <button
                     onclick={() => (editMode = true)}
@@ -202,7 +273,26 @@
                 <form
                     method="POST"
                     action="?/edit"
-                    use:enhance={() => {
+                    use:enhance={({ formData, cancel }) => {
+                        const jpStr = formData.get('jumlahPeserta');
+                        const jlVal = formData.get('jumlahLaki');
+                        const jpmpVal = formData.get('jumlahPerempuan');
+
+                        const jp = jpStr ? parseInt(jpStr.toString(), 10) || 0 : 0;
+                        const hasLaki = jlVal !== null && jlVal !== '';
+                        const hasPerempuan = jpmpVal !== null && jpmpVal !== '';
+
+                        if (hasLaki || hasPerempuan) {
+                            const jl = hasLaki ? parseInt(jlVal.toString(), 10) || 0 : 0;
+                            const jpm = hasPerempuan ? parseInt(jpmpVal.toString(), 10) || 0 : 0;
+
+                            if (jl + jpm !== jp) {
+                                toasts.error(`Jumlah Laki-laki (${jl}) + Perempuan (${jpm}) harus sama dengan Total Peserta (${jp})`);
+                                cancel();
+                                return;
+                            }
+                        }
+
                         editLoading = true;
                         return async ({ update }) => {
                             await update({ reset: false });
@@ -605,16 +695,40 @@
                                 {/if}
 
                                 {#if riwayat.dataLama}
-                                    <details class="mt-2">
-                                        <summary class="text-[10px] text-zinc-400 cursor-pointer hover:text-zinc-600 font-medium">Lihat data sebelum diubah</summary>
-                                        <div class="mt-2 bg-zinc-50 rounded-lg p-3 text-[10px] font-mono text-zinc-500 space-y-1 border border-zinc-100">
-                                            {#each Object.entries(riwayat.dataLama) as [key, val]}
-                                                {#if val !== null && val !== undefined}
-                                                    <div><span class="font-bold text-zinc-400">{key}:</span> {String(val)}</div>
-                                                {/if}
-                                            {/each}
+                                    {@const diffs = getDiffs(riwayat, laporan.riwayatRevisi.indexOf(riwayat))}
+                                    {#if diffs.length > 0}
+                                        <div class="mt-3 overflow-hidden border border-zinc-200 rounded-xl bg-white shadow-sm max-w-2xl">
+                                            <table class="w-full text-left border-collapse text-[11px] sm:text-xs">
+                                                <thead>
+                                                    <tr class="bg-zinc-50 border-b border-zinc-200 text-zinc-500 font-bold uppercase tracking-wider text-[9px] sm:text-[10px]">
+                                                        <th class="p-2 sm:p-3">Kolom / Field</th>
+                                                        <th class="p-2 sm:p-3">Sebelum</th>
+                                                        <th class="p-2 sm:p-3">Sesudah</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody class="divide-y divide-zinc-100 font-medium">
+                                                    {#each diffs as diff}
+                                                        <tr class="hover:bg-zinc-50/50">
+                                                            <td class="p-2 sm:p-3 font-bold text-zinc-700">{diff.label}</td>
+                                                            <td class="p-2 sm:p-3 text-rose-600 line-through bg-rose-50/10">{diff.before}</td>
+                                                            <td class="p-2 sm:p-3 text-emerald-600 font-semibold bg-emerald-50/10">{diff.after}</td>
+                                                        </tr>
+                                                    {/each}
+                                                </tbody>
+                                            </table>
                                         </div>
-                                    </details>
+                                    {:else}
+                                        <details class="mt-2">
+                                            <summary class="text-[10px] text-zinc-400 cursor-pointer hover:text-zinc-600 font-medium">Lihat snapshot data lama (tidak ada perubahan field terdeteksi)</summary>
+                                            <div class="mt-2 bg-zinc-50 rounded-lg p-3 text-[10px] font-mono text-zinc-500 space-y-1 border border-zinc-100">
+                                                {#each Object.entries(riwayat.dataLama) as [key, val]}
+                                                    {#if val !== null && val !== undefined}
+                                                        <div><span class="font-bold text-zinc-400">{key}:</span> {String(val)}</div>
+                                                    {/if}
+                                                {/each}
+                                            </div>
+                                        </details>
+                                    {/if}
                                 {/if}
                             </div>
                         </div>
