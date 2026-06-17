@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS `riwayat_revisi` (
 
 -- 4. Tambah kolom deleted_at untuk soft delete (jika belum ada)
 ALTER TABLE `laporan_kegiatan`
-  ADD COLUMN IF NOT EXISTS `deleted_at` TIMESTAMP DEFAULT NULL AFTER `id_verifikator`,
+  ADD COLUMN IF NOT EXISTS `deleted_at` TIMESTAMP NULL DEFAULT NULL AFTER `id_verifikator`,
   ADD INDEX IF NOT EXISTS `idx_deleted_at` (`deleted_at`);
 
 -- 5. Update jenis_kegiatan yang sudah ada dengan id_bidang yang sesuai

@@ -8,6 +8,9 @@
 --   mysql -u root -p dp2kbp3a < database/dp2kbp3a_schema.sql
 -- ============================================================
 
+CREATE DATABASE IF NOT EXISTS `dp2kbp3a`;
+USE `dp2kbp3a`;
+
 SET FOREIGN_KEY_CHECKS = 0;
 SET NAMES utf8mb4;
 
@@ -95,7 +98,7 @@ CREATE TABLE IF NOT EXISTS `laporan_kegiatan` (
   `status_verifikasi`   ENUM('Pending','Disetujui','Ditolak','Revisi') NOT NULL DEFAULT 'Pending',
   `catatan_verifikator` TEXT,
   `id_verifikator`      VARCHAR(36)  DEFAULT NULL,
-  `deleted_at`          TIMESTAMP    DEFAULT NULL,
+  `deleted_at`          TIMESTAMP    NULL DEFAULT NULL,
   `created_at`          TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
   `updated_at`          TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id_laporan`),
