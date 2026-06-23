@@ -1,7 +1,11 @@
 import type { PageServerLoad } from './$types'
 import { createAPI } from '$lib/server/api'
 
-export const load: PageServerLoad = async ({ cookies, locals }) => {
+export const load: PageServerLoad = async ({ cookies, locals, parent }) => {
+	const { profil } = await parent()
+	const permissions = profil?.permissions || []
+	const role = locals.user?.namaRole
+
 	const session = cookies.get('session') ?? ''
 	const api = createAPI(`session=${session}`)
 
@@ -10,11 +14,10 @@ export const load: PageServerLoad = async ({ cookies, locals }) => {
 	let byStatus: Record<string, number> = {}
 	let laporanTerbaru: unknown[] = []
 
-	const role = locals.user?.namaRole
-
 	try {
-		// Statistik (hanya untuk admin, kepala_bidang, pimpinan)
-		if (role !== 'petugas') {
+		// Statistik (hanya jika memiliki izin lihat_statistik)
+		const hasStatPerm = role === 'admin' || permissions.includes('lihat_statistik')
+		if (hasStatPerm) {
 			const resStats = await api.get('/statistik')
 			if (resStats.ok) {
 				const data = await resStats.json()

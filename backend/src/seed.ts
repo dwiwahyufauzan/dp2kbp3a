@@ -14,10 +14,22 @@ async function seed() {
 
   // ─── Roles ───────────────────────────────────────────────────────────────
   const rolesData = [
-    { namaRole: 'admin' },
-    { namaRole: 'petugas' },
-    { namaRole: 'kepala_bidang' },
-    { namaRole: 'pimpinan' },
+    {
+      namaRole: 'admin',
+      permissions: ['buat_laporan', 'verifikasi_laporan', 'rekap_laporan', 'lihat_statistik', 'kelola_master', 'kelola_pengguna', 'kelola_hak_akses']
+    },
+    {
+      namaRole: 'petugas',
+      permissions: ['buat_laporan', 'lihat_statistik']
+    },
+    {
+      namaRole: 'kepala_bidang',
+      permissions: ['verifikasi_laporan', 'rekap_laporan', 'lihat_statistik']
+    },
+    {
+      namaRole: 'pimpinan',
+      permissions: ['rekap_laporan', 'lihat_statistik']
+    },
   ]
 
   const roleMap: Record<string, string> = {}
@@ -31,12 +43,13 @@ async function seed() {
 
     if (!existing) {
       const idRole = crypto.randomUUID()
-      await db.insert(roles).values({ idRole, namaRole: r.namaRole })
+      await db.insert(roles).values({ idRole, namaRole: r.namaRole, permissions: r.permissions })
       roleMap[r.namaRole] = idRole
       console.log(`  Role ditambahkan: ${r.namaRole}`)
     } else {
+      await db.update(roles).set({ permissions: r.permissions }).where(eq(roles.idRole, existing.idRole))
       roleMap[r.namaRole] = existing.idRole
-      console.log(`  Role sudah ada: ${r.namaRole}`)
+      console.log(`  Role sudah ada, permissions diperbarui: ${r.namaRole}`)
     }
   }
 

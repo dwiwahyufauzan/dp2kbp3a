@@ -2,7 +2,16 @@ import { fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
 import { createAPI } from '$lib/server/api'
 
-export const load: PageServerLoad = async ({ cookies }) => {
+export const load: PageServerLoad = async ({ cookies, locals, parent }) => {
+	const { profil } = await parent()
+	const permissions = profil?.permissions || []
+	const role = locals.user?.namaRole
+
+	const canCreate = role === 'admin' || permissions.includes('buat_laporan')
+	if (!canCreate) {
+		redirect(302, '/laporan')
+	}
+
 	const session = cookies.get('session') ?? ''
 	const api = createAPI(`session=${session}`)
 

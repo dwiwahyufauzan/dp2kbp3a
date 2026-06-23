@@ -16,6 +16,7 @@ import { relations } from 'drizzle-orm'
 export const roles = mysqlTable('roles', {
   idRole: varchar('id_role', { length: 36 }).primaryKey(),
   namaRole: varchar('nama_role', { length: 50 }).notNull().unique(),
+  permissions: json('permissions').$type<string[]>(),
 })
 
 // ─── Bidang ────────────────────────────────────────────────────────────────

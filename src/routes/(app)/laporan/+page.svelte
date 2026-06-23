@@ -83,9 +83,11 @@
             <p class="text-zinc-500 mt-1 font-light">{total} laporan ditemukan secara keseluruhan.</p>
         </div>
 
-        <a href="/laporan/buat" class="flex items-center gap-2 px-5 py-2.5 bg-zinc-900 text-white text-sm font-semibold rounded-xl hover:bg-zinc-800 transition-all shadow-md shadow-zinc-200">
-            <Plus class="w-4 h-4" /> Buat Laporan
-        </a>
+        {#if data.user?.namaRole === 'admin' || (data.profil?.permissions || []).includes('buat_laporan')}
+            <a href="/laporan/buat" class="flex items-center gap-2 px-5 py-2.5 bg-zinc-900 text-white text-sm font-semibold rounded-xl hover:bg-zinc-800 transition-all shadow-md shadow-zinc-200">
+                <Plus class="w-4 h-4" /> Buat Laporan
+            </a>
+        {/if}
     </header>
 
     <!-- FILTER -->

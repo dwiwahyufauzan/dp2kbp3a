@@ -9,6 +9,7 @@ import { catatLog } from './log-aktivitas'
 import type { UserPayload } from '../types'
 import { checkRateLimit, getClientIP } from '../plugins/rateLimit'
 import { clearCachePattern } from '../utils/cache'
+import { hasPermission } from '../utils/permission'
 
 const UPLOAD_DIR = Bun.env.UPLOAD_DIR || join(import.meta.dir, '../../uploads')
 
@@ -244,9 +245,10 @@ export const laporanRoutes = new Elysia({ prefix: '/laporan' })
         return { message: `Terlalu banyak percobaan pengiriman laporan. Silakan coba lagi dalam ${rl.retryAfterSec} detik.` }
       }
 
-      if (!['petugas', 'admin'].includes(u.namaRole)) {
+      const canCreate = await hasPermission(u.namaRole, 'buat_laporan')
+      if (!canCreate) {
         set.status = 403
-        return { message: 'Hanya petugas atau admin yang dapat menginput laporan' }
+        return { message: 'Hanya role dengan izin buat_laporan (seperti admin atau petugas) yang dapat menginput laporan' }
       }
 
       // Validasi bidang

@@ -4,6 +4,7 @@ import { db } from '../db/connection'
 import { jenisKegiatan, bidang } from '../db/schema'
 import { authPlugin } from '../plugins/auth'
 import type { UserPayload } from '../types'
+import { hasPermission } from '../utils/permission'
 
 // SRS: Jenis Kegiatan — dikelola oleh Admin & Pimpinan (endpoint: /jenis-kegiatan)
 export const masterKegiatanRoutes = new Elysia({ prefix: '/jenis-kegiatan' })
@@ -70,9 +71,10 @@ export const masterKegiatanRoutes = new Elysia({ prefix: '/jenis-kegiatan' })
         ctx.set.status = 401
         return { message: 'Tidak terautentikasi' }
       }
-      if (!['admin', 'pimpinan'].includes(user.namaRole)) {
+      const canManage = await hasPermission(user.namaRole, 'kelola_master')
+      if (!canManage) {
         ctx.set.status = 403
-        return { message: 'Hanya admin atau pimpinan yang dapat mengelola jenis kegiatan' }
+        return { message: 'Akses ditolak: Anda tidak memiliki izin kelola_master' }
       }
 
       const idJenis = crypto.randomUUID()
@@ -102,9 +104,10 @@ export const masterKegiatanRoutes = new Elysia({ prefix: '/jenis-kegiatan' })
         ctx.set.status = 401
         return { message: 'Tidak terautentikasi' }
       }
-      if (!['admin', 'pimpinan'].includes(user.namaRole)) {
+      const canManage = await hasPermission(user.namaRole, 'kelola_master')
+      if (!canManage) {
         ctx.set.status = 403
-        return { message: 'Akses ditolak' }
+        return { message: 'Akses ditolak: Anda tidak memiliki izin kelola_master' }
       }
 
       const [existing] = await db
@@ -144,9 +147,10 @@ export const masterKegiatanRoutes = new Elysia({ prefix: '/jenis-kegiatan' })
       ctx.set.status = 401
       return { message: 'Tidak terautentikasi' }
     }
-    if (!['admin', 'pimpinan'].includes(user.namaRole)) {
+    const canManage = await hasPermission(user.namaRole, 'kelola_master')
+    if (!canManage) {
       ctx.set.status = 403
-      return { message: 'Akses ditolak' }
+      return { message: 'Akses ditolak: Anda tidak memiliki izin kelola_master' }
     }
 
     const [existing] = await db

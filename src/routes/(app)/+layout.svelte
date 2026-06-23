@@ -111,18 +111,18 @@
         ></div>
     {/if}
 
-    <div class="relative hidden lg:flex shrink-0 flex-col transition-[width] duration-300 ease-in-out z-20 {sidebarCollapsed ? 'w-[72px]' : 'w-[260px]'} border-r border-zinc-200 shadow-sm">
-        <Sidebar user={data.user!} pendingCount={data.pendingCount ?? 0} revisiCount={data.revisiCount ?? 0} collapsed={sidebarCollapsed} />
+    <div class="relative hidden lg:flex shrink-0 flex-col h-full max-h-screen min-h-0 transition-[width] duration-300 ease-in-out z-20 {sidebarCollapsed ? 'w-[72px]' : 'w-[260px]'} border-r border-zinc-200 shadow-sm">
+        <Sidebar user={data.user!} permissions={data.profil?.permissions || []} pendingCount={data.pendingCount ?? 0} revisiCount={data.revisiCount ?? 0} collapsed={sidebarCollapsed} />
     </div>
 
     <!-- Mobile Sidebar -->
     <aside
         class="fixed inset-y-0 left-0 z-50 w-[260px] bg-zinc-950 lg:hidden transition-transform duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] {sidebarOpen ? 'translate-x-0' : '-translate-x-full'}"
     >
-        <Sidebar user={data.user!} pendingCount={data.pendingCount ?? 0} revisiCount={data.revisiCount ?? 0} onClose={() => (sidebarOpen = false)} />
+        <Sidebar user={data.user!} permissions={data.profil?.permissions || []} pendingCount={data.pendingCount ?? 0} revisiCount={data.revisiCount ?? 0} onClose={() => (sidebarOpen = false)} />
     </aside>
 
-    <div class="flex-1 flex flex-col min-w-0 relative w-full bg-white">
+    <div class="flex-1 flex flex-col min-w-0 min-h-0 h-full relative w-full bg-white">
         
         <header class="sticky top-0 z-30 bg-white/80 backdrop-blur-xl px-4 sm:px-8 py-4 flex items-center justify-between border-b border-zinc-100">
             <div class="flex items-center gap-3 sm:gap-6">

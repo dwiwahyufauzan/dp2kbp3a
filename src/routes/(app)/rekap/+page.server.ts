@@ -1,7 +1,17 @@
+import { redirect } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
 import { createAPI } from '$lib/server/api'
 
-export const load: PageServerLoad = async ({ cookies, url }) => {
+export const load: PageServerLoad = async ({ cookies, url, parent }) => {
+	const { profil } = await parent()
+	const permissions = profil?.permissions || []
+	const role = profil?.namaRole
+
+	const canRecap = role === 'admin' || permissions.includes('rekap_laporan')
+	if (!canRecap) {
+		redirect(303, '/dashboard')
+	}
+
 	const session = cookies.get('session') ?? ''
 	const api = createAPI(`session=${session}`)
 

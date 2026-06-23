@@ -12,6 +12,7 @@ import { logAktivitasRoutes } from './routes/log-aktivitas'
 import { adminPenggunaRoutes } from './routes/admin/pengguna'
 import { adminUnitKerjaRoutes } from './routes/admin/unit-kerja'
 import { adminLokasiTugasRoutes } from './routes/admin/lokasi-tugas'
+import { adminHakAksesRoutes } from './routes/admin/hak-akses'
 import { profilRoutes } from './routes/profil'
 import { verifikasiRoutes } from './routes/verifikasi'
 import { notifikasiRoutes } from './routes/notifikasi'
@@ -87,6 +88,7 @@ const app = new Elysia()
   .use(adminPenggunaRoutes)
   .use(adminUnitKerjaRoutes)
   .use(adminLokasiTugasRoutes)
+  .use(adminHakAksesRoutes)
   .use(profilRoutes)
   .use(verifikasiRoutes)
   .use(notifikasiRoutes)

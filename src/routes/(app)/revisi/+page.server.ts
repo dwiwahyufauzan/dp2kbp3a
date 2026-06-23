@@ -4,10 +4,13 @@ import { createAPI } from '$lib/server/api'
 
 const LIMIT = 15
 
-export const load: PageServerLoad = async ({ cookies, locals, url }) => {
-	// Halaman revisi hanya untuk petugas & admin
+export const load: PageServerLoad = async ({ cookies, locals, url, parent }) => {
+	const { profil } = await parent()
+	const permissions = profil?.permissions || []
 	const role = locals.user?.namaRole
-	if (!locals.user || !['petugas', 'admin'].includes(role ?? '')) {
+
+	const canCreate = role === 'admin' || permissions.includes('buat_laporan')
+	if (!locals.user || !canCreate) {
 		redirect(302, '/laporan')
 	}
 

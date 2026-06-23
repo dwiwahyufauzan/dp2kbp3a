@@ -5,18 +5,20 @@ import { laporanKegiatan, users, jenisKegiatan, bidang, notifikasi, dokumentasiL
 import { authPlugin } from '../plugins/auth'
 import type { UserPayload } from '../types'
 import { clearCachePattern } from '../utils/cache'
+import { hasPermission } from '../utils/permission'
 
 export const verifikasiRoutes = new Elysia({ prefix: '/verifikasi' })
   .use(authPlugin)
-  .onBeforeHandle((ctx) => {
+  .onBeforeHandle(async (ctx) => {
     const u = (ctx as unknown as { user: UserPayload | null }).user
     if (!u) {
       ctx.set.status = 401
       return { message: 'Tidak terautentikasi' }
     }
-    if (!['kepala_bidang', 'admin'].includes(u.namaRole)) {
+    const canVerify = await hasPermission(u.namaRole, 'verifikasi_laporan')
+    if (!canVerify) {
       ctx.set.status = 403
-      return { message: 'Akses ditolak: hanya kepala bidang atau admin' }
+      return { message: 'Akses ditolak: Anda tidak memiliki izin untuk memverifikasi laporan' }
     }
   })
 

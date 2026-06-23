@@ -4,18 +4,20 @@ import { db } from '../db/connection'
 import { laporanKegiatan, users, bidang, jenisKegiatan, dokumentasiLaporan, roles, lokasiTugas } from '../db/schema'
 import { authPlugin } from '../plugins/auth'
 import type { UserPayload } from '../types'
+import { hasPermission } from '../utils/permission'
 
 export const rekapRoutes = new Elysia({ prefix: '/rekap' })
   .use(authPlugin)
-  .onBeforeHandle((ctx) => {
+  .onBeforeHandle(async (ctx) => {
     const user = (ctx as unknown as { user: UserPayload | null }).user
     if (!user) {
       ctx.set.status = 401
       return { message: 'Tidak terautentikasi' }
     }
-    if (!['kepala_bidang', 'admin', 'pimpinan'].includes(user.namaRole)) {
+    const canRecap = await hasPermission(user.namaRole, 'rekap_laporan')
+    if (!canRecap) {
       ctx.set.status = 403
-      return { message: 'Akses ditolak' }
+      return { message: 'Akses ditolak: Anda tidak memiliki izin untuk melihat rekapitulasi' }
     }
   })
 

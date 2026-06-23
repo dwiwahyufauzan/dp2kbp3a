@@ -5,18 +5,20 @@ import { laporanKegiatan, users, jenisKegiatan } from '../db/schema'
 import { authPlugin } from '../plugins/auth'
 import type { UserPayload } from '../types'
 import { getCache, setCache } from '../utils/cache'
+import { hasPermission } from '../utils/permission'
 
 export const statistikRoutes = new Elysia({ prefix: '/statistik' })
   .use(authPlugin)
-  .onBeforeHandle((ctx) => {
+  .onBeforeHandle(async (ctx) => {
     const user = (ctx as unknown as { user: UserPayload | null }).user
     if (!user) {
       ctx.set.status = 401
       return { message: 'Tidak terautentikasi' }
     }
-    if (!['kepala_bidang', 'admin', 'pimpinan'].includes(user.namaRole)) {
+    const canView = await hasPermission(user.namaRole, 'lihat_statistik')
+    if (!canView) {
       ctx.set.status = 403
-      return { message: 'Akses ditolak' }
+      return { message: 'Akses ditolak: Anda tidak memiliki izin untuk melihat statistik' }
     }
   })
 

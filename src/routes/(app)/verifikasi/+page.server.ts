@@ -3,9 +3,13 @@ import { fail } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
 import { createAPI } from '$lib/server/api'
 
-export const load: PageServerLoad = async ({ cookies, locals }) => {
+export const load: PageServerLoad = async ({ cookies, locals, parent }) => {
+	const { profil } = await parent()
+	const permissions = profil?.permissions || []
 	const role = locals.user?.namaRole
-	if (!role || !['kepala_bidang', 'admin'].includes(role)) {
+
+	const canVerify = role === 'admin' || permissions.includes('verifikasi_laporan')
+	if (!canVerify) {
 		redirect(303, '/dashboard')
 	}
 

@@ -46,7 +46,7 @@ export const load: LayoutServerLoad = async ({ locals, cookies }) => {
 		}
 	} catch { /* abaikan */ }
 
-	let profil: { namaLengkap: string; email: string; namaRole: string; namaBidang?: string; namaKecamatan?: string; namaDesa?: string } | null = null
+	let profil: { namaLengkap: string; email: string; namaRole: string; permissions?: string[]; namaBidang?: string; namaKecamatan?: string; namaDesa?: string } | null = null
 	try {
 		const res = await api.get('/profil')
 		if (res.ok) profil = await res.json()

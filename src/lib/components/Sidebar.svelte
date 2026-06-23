@@ -6,6 +6,7 @@
 
     let {
         user,
+        permissions = [],
         pendingCount = 0,
         revisiCount = 0,
         collapsed = false,
@@ -13,6 +14,7 @@
         onToggle
     }: {
         user: { namaLengkap: string; namaRole: string; email: string }
+        permissions?: string[]
         pendingCount?: number
         revisiCount?: number
         collapsed?: boolean
@@ -29,6 +31,7 @@
         label: string;
         icon: any;
         roles: NamaRole[];
+        permission?: string;
     }
 
     const navItems: NavItem[] = [
@@ -48,25 +51,29 @@
             href: '/verifikasi',
             label: 'Verifikasi',
             icon: ShieldCheck,
-            roles: ['admin', 'kepala_bidang']
+            roles: ['admin', 'kepala_bidang'],
+            permission: 'verifikasi_laporan'
         },
         {
             href: '/revisi',
             label: 'Revisi Saya',
             icon: ClipboardEdit,
-            roles: ['petugas', 'admin']
+            roles: ['petugas', 'admin'],
+            permission: 'buat_laporan'
         },
         {
             href: '/rekap',
             label: 'Rekapitulasi',
             icon: Layers,
-            roles: ['admin', 'kepala_bidang', 'pimpinan']
+            roles: ['admin', 'kepala_bidang', 'pimpinan'],
+            permission: 'rekap_laporan'
         },
         {
             href: '/statistik',
             label: 'Analitik & Tren',
             icon: LineChart,
-            roles: ['admin', 'kepala_bidang', 'pimpinan']
+            roles: ['admin', 'kepala_bidang', 'pimpinan'],
+            permission: 'lihat_statistik'
         }
     ];
 
@@ -88,10 +95,25 @@
             label: 'Konfigurasi Jenis',
             icon: List,
             roles: ['admin']
+        },
+        {
+            href: '/admin/hak-akses',
+            label: 'Hak Akses',
+            icon: ShieldCheck,
+            roles: ['admin']
         }
     ];
 
-    const visibleNav = $derived(navItems.filter((item) => item.roles.includes(role)));
+    const visibleNav = $derived(
+        navItems.filter((item) => {
+            const hasRole = item.roles.includes(role);
+            if (!hasRole) return false;
+            if (item.permission) {
+                return role === 'admin' || permissions.includes(item.permission);
+            }
+            return true;
+        })
+    );
     const visibleAdmin = $derived(adminItems.filter((item) => item.roles.includes(role)));
     const initials = $derived(user.namaLengkap.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2));
 
@@ -103,7 +125,7 @@
     };
 </script>
 
-<div class="flex flex-col h-full bg-zinc-950 text-zinc-300 font-sans border-r border-zinc-900">
+<div class="flex flex-col h-full max-h-screen bg-zinc-950 text-zinc-300 font-sans border-r border-zinc-900 overflow-hidden">
     <!-- Branding -->
     <div class="px-5 py-6 flex items-center {collapsed ? 'justify-center' : 'justify-between'} border-b border-zinc-900">
         <div class="flex items-center gap-3">

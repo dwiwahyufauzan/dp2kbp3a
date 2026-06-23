@@ -24,6 +24,7 @@ export const profilRoutes = new Elysia({ prefix: '/profil' })
         namaLengkap: users.namaLengkap,
         email: users.email,
         namaRole: roles.namaRole,
+        permissions: roles.permissions,
         namaBidang: bidang.namaBidang,
         namaKecamatan: lokasiTugas.namaKecamatan,
         namaDesa: lokasiTugas.namaDesa,
