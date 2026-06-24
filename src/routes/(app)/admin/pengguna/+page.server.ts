@@ -1,8 +1,19 @@
-import { fail } from '@sveltejs/kit'
+import { fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
 import { createAPI } from '$lib/server/api'
 
-export const load: PageServerLoad = async ({ cookies }) => {
+export const load: PageServerLoad = async ({ cookies, parent, locals }) => {
+	const { profil } = await parent()
+	const role = locals.user?.namaRole
+	let permissions = profil?.permissions || []
+	if (typeof permissions === 'string') {
+		try { permissions = JSON.parse(permissions) } catch { permissions = [] }
+	}
+	const canManage = role === 'admin' || permissions.includes('kelola_pengguna')
+	if (!canManage) {
+		redirect(302, '/dashboard')
+	}
+
 	const session = cookies.get('session') ?? ''
 	const api = createAPI(`session=${session}`)
 

@@ -2,10 +2,18 @@ import { redirect } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
 import { createAPI } from '$lib/server/api'
 
-export const load: PageServerLoad = async ({ cookies, url, parent }) => {
+export const load: PageServerLoad = async ({ cookies, url, parent, locals }) => {
 	const { profil } = await parent()
-	const permissions = profil?.permissions || []
-	const role = profil?.namaRole
+	const role = locals.user?.namaRole
+
+	let permissions = profil?.permissions || []
+	if (typeof permissions === 'string') {
+		try {
+			permissions = JSON.parse(permissions)
+		} catch {
+			permissions = []
+		}
+	}
 
 	const canRecap = role === 'admin' || permissions.includes('rekap_laporan')
 	if (!canRecap) {

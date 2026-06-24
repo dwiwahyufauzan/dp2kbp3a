@@ -42,7 +42,19 @@ export const profilRoutes = new Elysia({ prefix: '/profil' })
       ctx.set.status = 404
       return { message: 'User tidak ditemukan' }
     }
-    return row
+
+    let parsedPerms = row.permissions;
+    if (typeof parsedPerms === 'string') {
+      try {
+        parsedPerms = JSON.parse(parsedPerms);
+      } catch {
+        parsedPerms = [];
+      }
+    }
+    return {
+      ...row,
+      permissions: parsedPerms || [],
+    }
   })
 
   // PATCH /profil — update nama, email, password sendiri

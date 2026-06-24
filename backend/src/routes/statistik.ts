@@ -51,6 +51,8 @@ export const statistikRoutes = new Elysia({ prefix: '/statistik' })
         } else {
           conditions.push(eq(laporanKegiatan.idBidang, ''))
         }
+      } else if (user.namaRole === 'petugas') {
+        conditions.push(eq(laporanKegiatan.idUser, user.idUser))
       } else if (query.idBidang) {
         conditions.push(eq(laporanKegiatan.idBidang, query.idBidang))
       }
@@ -105,6 +107,8 @@ export const statistikRoutes = new Elysia({ prefix: '/statistik' })
         } else {
           trenConditions.push(eq(laporanKegiatan.idBidang, ''))
         }
+      } else if (user.namaRole === 'petugas') {
+        trenConditions.push(eq(laporanKegiatan.idUser, user.idUser))
       } else if (query.idBidang) {
         trenConditions.push(eq(laporanKegiatan.idBidang, query.idBidang))
       }

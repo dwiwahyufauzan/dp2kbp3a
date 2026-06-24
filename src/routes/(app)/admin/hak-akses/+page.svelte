@@ -68,6 +68,22 @@
             icon: Grid2X2,
             color: "text-rose-600 bg-rose-50 border-rose-100",
         },
+        {
+            key: "kelola_pengguna",
+            label: "Kelola Pengguna",
+            description:
+                "Mengizinkan pengguna untuk menambah, mengubah, dan menghapus data pengguna (akun) di sistem.",
+            icon: Users,
+            color: "text-violet-600 bg-violet-50 border-violet-100",
+        },
+        {
+            key: "kelola_hak_akses",
+            label: "Kelola Hak Akses",
+            description:
+                "Mengizinkan pengguna untuk mengatur hak akses/izin masing-masing peran pengguna.",
+            icon: Shield,
+            color: "text-teal-600 bg-teal-50 border-teal-100",
+        },
     ];
 
     const roleDescriptions: Record<string, string> = {
@@ -96,7 +112,15 @@
 
     $effect(() => {
         if (selectedRole) {
-            activePermissions = selectedRole.permissions || [];
+            let perms = selectedRole.permissions;
+            if (typeof perms === 'string') {
+                try {
+                    perms = JSON.parse(perms);
+                } catch {
+                    perms = [];
+                }
+            }
+            activePermissions = perms || [];
         }
     });
 

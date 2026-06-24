@@ -4,24 +4,33 @@ import { db } from '../../db/connection'
 import { roles } from '../../db/schema'
 import { authPlugin } from '../../plugins/auth'
 import type { UserPayload } from '../../types'
+import { hasPermission } from '../../utils/permission'
 
 export const adminHakAksesRoutes = new Elysia({ prefix: '/admin/hak-akses' })
   .use(authPlugin)
-  .onBeforeHandle((ctx) => {
+  .onBeforeHandle(async (ctx) => {
     const user = (ctx as unknown as { user: UserPayload | null }).user
     if (!user) {
       ctx.set.status = 401
       return { message: 'Tidak terautentikasi' }
     }
-    if (user.namaRole !== 'admin') {
+    const allowed = await hasPermission(user.namaRole, 'kelola_hak_akses')
+    if (!allowed) {
       ctx.set.status = 403
-      return { message: 'Hanya admin yang dapat mengakses' }
+      return { message: 'Akses ditolak: Anda tidak memiliki izin kelola_hak_akses' }
     }
   })
 
   // GET /admin/hak-akses — daftar semua role dan permissions
   .get('/', async () => {
-    return db.select().from(roles).orderBy(roles.namaRole)
+    const list = await db.select().from(roles).orderBy(roles.namaRole)
+    return list.map(r => {
+      let perms = r.permissions;
+      if (typeof perms === 'string') {
+        try { perms = JSON.parse(perms) } catch { perms = [] }
+      }
+      return { ...r, permissions: perms || [] }
+    })
   })
 
   // PATCH /admin/hak-akses/:id — update permissions untuk sebuah role

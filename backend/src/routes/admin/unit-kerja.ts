@@ -4,20 +4,24 @@ import { db } from '../../db/connection'
 import { bidang } from '../../db/schema'
 import { authPlugin } from '../../plugins/auth'
 import type { UserPayload } from '../../types'
+import { hasPermission } from '../../utils/permission'
 
 // SRS F-11: Manajemen bidang/unit kerja (endpoint: /admin/bidang)
 export const adminUnitKerjaRoutes = new Elysia({ prefix: '/admin/bidang' })
   .use(authPlugin)
-  .onBeforeHandle((ctx) => {
+  .onBeforeHandle(async (ctx) => {
     const user = (ctx as unknown as { user: UserPayload | null }).user
     if (!user) {
       ctx.set.status = 401
       return { message: 'Tidak terautentikasi' }
     }
-    // Hanya admin yang dapat mengubah (POST, PATCH, DELETE) data bidang
-    if (['POST', 'PATCH', 'DELETE'].includes(ctx.request.method) && user.namaRole !== 'admin') {
-      ctx.set.status = 403
-      return { message: 'Hanya admin yang dapat mengelola bidang' }
+    // Pengguna dengan izin kelola_master yang dapat mengubah (POST, PATCH, DELETE) data bidang
+    if (['POST', 'PATCH', 'DELETE'].includes(ctx.request.method)) {
+      const canManage = await hasPermission(user.namaRole, 'kelola_master')
+      if (!canManage) {
+        ctx.set.status = 403
+        return { message: 'Akses ditolak: Anda tidak memiliki izin kelola_master' }
+      }
     }
   })
 

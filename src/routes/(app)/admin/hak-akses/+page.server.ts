@@ -2,9 +2,15 @@ import { fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
 import { createAPI } from '$lib/server/api'
 
-export const load: PageServerLoad = async ({ cookies, locals }) => {
-	// Only admin can access this page
-	if (locals.user?.namaRole !== 'admin') {
+export const load: PageServerLoad = async ({ cookies, locals, parent }) => {
+	const { profil } = await parent()
+	const role = locals.user?.namaRole
+	let permissions = profil?.permissions || []
+	if (typeof permissions === 'string') {
+		try { permissions = JSON.parse(permissions) } catch { permissions = [] }
+	}
+	const canManage = role === 'admin' || permissions.includes('kelola_hak_akses')
+	if (!canManage) {
 		redirect(302, '/dashboard')
 	}
 
@@ -12,7 +18,17 @@ export const load: PageServerLoad = async ({ cookies, locals }) => {
 	const api = createAPI(`session=${session}`)
 
 	const res = await api.get('/admin/hak-akses')
-	const rolesList = res.ok ? await res.json() : []
+	let rolesList = res.ok ? await res.json() : []
+
+	if (Array.isArray(rolesList)) {
+		rolesList = rolesList.map(r => {
+			let perms = r.permissions;
+			if (typeof perms === 'string') {
+				try { perms = JSON.parse(perms) } catch { perms = [] }
+			}
+			return { ...r, permissions: perms || [] }
+		})
+	}
 
 	return {
 		roles: rolesList

@@ -5,6 +5,7 @@
     import type { ActionData, PageData } from './$types';
     import type { LokasiTugas } from '$lib/types';
     import { MapPin, Plus, CheckCircle2, FileX2, Edit2, X, Filter, RotateCcw } from 'lucide-svelte';
+    import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 
     let { data, form }: { data: PageData; form: ActionData } = $props();
     const lokasi = $derived(data.lokasi as LokasiTugas[]);
@@ -16,6 +17,10 @@
 
     let createKey = $state(0);
     let editKey = $state(0);
+
+    let confirmOpen = $state(false);
+    let confirmMsg = $state('');
+    let pendingForm = $state<HTMLFormElement | null>(null);
 
     $effect(() => {
         if (form?.createSuccess || form?.updateSuccess || form?.deleteSuccess) {
@@ -112,7 +117,7 @@
                                     <button onclick={() => { editItem = l; editKey++; }} class="px-3 py-1.5 text-xs font-bold border border-zinc-200 text-zinc-600 bg-white rounded-lg hover:bg-zinc-100 transition-all">Edit</button>
                                     <form method="POST" action="?/delete" use:enhance={() => { return async ({ update }) => { await update() } }}>
                                         <input type="hidden" name="id" value={l.idLokasi} />
-                                        <button type="submit" onclick={(e) => { if (!confirm('Hapus lokasi ini?')) e.preventDefault() }} class="px-3 py-1.5 text-xs font-bold border border-rose-200 text-rose-600 bg-white rounded-lg hover:bg-rose-50 transition-all">Hapus</button>
+                                        <button type="button" onclick={(e) => { pendingForm = (e.currentTarget as HTMLElement).closest('form'); confirmMsg = `Hapus lokasi "${l.namaKecamatan} - ${l.namaDesa}"?`; confirmOpen = true; }} class="px-3 py-1.5 text-xs font-bold border border-rose-200 text-rose-600 bg-white rounded-lg hover:bg-rose-50 transition-all">Hapus</button>
                                     </form>
                                 </div>
                             </td>
@@ -171,3 +176,10 @@
         </div>
     {/if}
 </div>
+
+<ConfirmDialog
+    open={confirmOpen}
+    message={confirmMsg}
+    onConfirm={() => { confirmOpen = false; pendingForm?.requestSubmit(); }}
+    onCancel={() => { confirmOpen = false; pendingForm = null; }}
+/>

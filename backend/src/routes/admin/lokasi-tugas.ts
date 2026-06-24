@@ -4,19 +4,25 @@ import { db } from '../../db/connection'
 import { lokasiTugas } from '../../db/schema'
 import { authPlugin } from '../../plugins/auth'
 import type { UserPayload } from '../../types'
+import { hasPermission } from '../../utils/permission'
 
 // SRS: Tabel lokasi_tugas — master wilayah tugas operasional (endpoint: /admin/lokasi-tugas)
 export const adminLokasiTugasRoutes = new Elysia({ prefix: '/admin/lokasi-tugas' })
   .use(authPlugin)
-  .onBeforeHandle((ctx) => {
+  .onBeforeHandle(async (ctx) => {
     const user = (ctx as unknown as { user: UserPayload | null }).user
     if (!user) {
       ctx.set.status = 401
       return { message: 'Tidak terautentikasi' }
     }
-    if (user.namaRole !== 'admin') {
-      ctx.set.status = 403
-      return { message: 'Hanya admin yang dapat mengakses' }
+    // GET requests are allowed for all authenticated users to read locations
+    // Mutative requests (POST, PATCH, DELETE) require kelola_master
+    if (['POST', 'PATCH', 'DELETE'].includes(ctx.request.method)) {
+      const canManage = await hasPermission(user.namaRole, 'kelola_master')
+      if (!canManage) {
+        ctx.set.status = 403
+        return { message: 'Akses ditolak: Anda tidak memiliki izin kelola_master' }
+      }
     }
   })
 

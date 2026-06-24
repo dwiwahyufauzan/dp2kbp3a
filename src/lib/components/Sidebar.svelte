@@ -51,28 +51,28 @@
             href: '/verifikasi',
             label: 'Verifikasi',
             icon: ShieldCheck,
-            roles: ['admin', 'kepala_bidang'],
+            roles: ['admin', 'petugas', 'kepala_bidang', 'pimpinan'],
             permission: 'verifikasi_laporan'
         },
         {
             href: '/revisi',
             label: 'Revisi Saya',
             icon: ClipboardEdit,
-            roles: ['petugas', 'admin'],
+            roles: ['admin', 'petugas', 'kepala_bidang', 'pimpinan'],
             permission: 'buat_laporan'
         },
         {
             href: '/rekap',
             label: 'Rekapitulasi',
             icon: Layers,
-            roles: ['admin', 'kepala_bidang', 'pimpinan'],
+            roles: ['admin', 'petugas', 'kepala_bidang', 'pimpinan'],
             permission: 'rekap_laporan'
         },
         {
             href: '/statistik',
             label: 'Analitik & Tren',
             icon: LineChart,
-            roles: ['admin', 'kepala_bidang', 'pimpinan'],
+            roles: ['admin', 'petugas', 'kepala_bidang', 'pimpinan'],
             permission: 'lihat_statistik'
         }
     ];
@@ -82,39 +82,80 @@
             href: '/admin/pengguna',
             label: 'Pengguna',
             icon: Users,
-            roles: ['admin']
+            roles: ['admin', 'petugas', 'kepala_bidang', 'pimpinan'],
+            permission: 'kelola_pengguna'
         },
         {
             href: '/admin/bidang',
             label: 'Bidang',
             icon: Grid2X2,
-            roles: ['admin']
+            roles: ['admin', 'petugas', 'kepala_bidang', 'pimpinan'],
+            permission: 'kelola_master'
         },
         {
             href: '/admin/jenis-kegiatan',
             label: 'Konfigurasi Jenis',
             icon: List,
-            roles: ['admin']
+            roles: ['admin', 'petugas', 'kepala_bidang', 'pimpinan'],
+            permission: 'kelola_master'
+        },
+        {
+            href: '/admin/lokasi-tugas',
+            label: 'Lokasi Tugas',
+            icon: Grid2X2,
+            roles: ['admin', 'petugas', 'kepala_bidang', 'pimpinan'],
+            permission: 'kelola_master'
         },
         {
             href: '/admin/hak-akses',
             label: 'Hak Akses',
             icon: ShieldCheck,
-            roles: ['admin']
+            roles: ['admin', 'petugas', 'kepala_bidang', 'pimpinan'],
+            permission: 'kelola_hak_akses'
         }
     ];
+
+    const cleanPermissions = $derived.by(() => {
+        let perms = permissions;
+        if (typeof perms === 'string') {
+            try {
+                perms = JSON.parse(perms);
+            } catch {
+                perms = [];
+            }
+        }
+        if (!Array.isArray(perms) || perms.length === 0) {
+            const defaultPermissions: Record<string, string[]> = {
+                admin: ['buat_laporan', 'verifikasi_laporan', 'rekap_laporan', 'lihat_statistik', 'kelola_master', 'kelola_pengguna', 'kelola_hak_akses'],
+                petugas: ['buat_laporan', 'lihat_statistik'],
+                kepala_bidang: ['verifikasi_laporan', 'rekap_laporan', 'lihat_statistik'],
+                pimpinan: ['rekap_laporan', 'lihat_statistik']
+            };
+            return defaultPermissions[role] || [];
+        }
+        return perms;
+    });
 
     const visibleNav = $derived(
         navItems.filter((item) => {
             const hasRole = item.roles.includes(role);
             if (!hasRole) return false;
             if (item.permission) {
-                return role === 'admin' || permissions.includes(item.permission);
+                return role === 'admin' || cleanPermissions.includes(item.permission);
             }
             return true;
         })
     );
-    const visibleAdmin = $derived(adminItems.filter((item) => item.roles.includes(role)));
+    const visibleAdmin = $derived(
+        adminItems.filter((item) => {
+            const hasRole = item.roles.includes(role);
+            if (!hasRole) return false;
+            if (item.permission) {
+                return role === 'admin' || cleanPermissions.includes(item.permission);
+            }
+            return true;
+        })
+    );
     const initials = $derived(user.namaLengkap.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2));
 
     const roleLabels: Record<NamaRole, string> = {
@@ -168,7 +209,7 @@
                     <svelte:component this={item.icon} class="w-4 h-4 {isActive(item.href) ? 'text-zinc-100' : 'text-zinc-500 group-hover:text-zinc-300'}" />
                 </div>
                 {#if !collapsed}
-                    <span class="flex-1">{item.label}</span>
+                    <span class="flex-1">{item.href === '/revisi' && role === 'petugas' ? 'Riwayat Revisian' : item.label}</span>
                     {#if item.href === '/laporan' && pendingCount > 0}
                         <span class="px-2 py-0.5 bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-bold font-mono rounded">
                             {pendingCount > 99 ? '99+' : pendingCount}

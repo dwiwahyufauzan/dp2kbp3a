@@ -241,6 +241,7 @@ export const riwayatRevisiRelations = relations(riwayatRevisi, ({ one }) => ({
     fields: [riwayatRevisi.idLaporan],
     references: [laporanKegiatan.idLaporan],
   }),
+
   user: one(users, { fields: [riwayatRevisi.idUser], references: [users.idUser] }),
 }))
 

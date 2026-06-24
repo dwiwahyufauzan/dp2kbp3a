@@ -49,8 +49,33 @@ export const load: LayoutServerLoad = async ({ locals, cookies }) => {
 	let profil: { namaLengkap: string; email: string; namaRole: string; permissions?: string[]; namaBidang?: string; namaKecamatan?: string; namaDesa?: string } | null = null
 	try {
 		const res = await api.get('/profil')
-		if (res.ok) profil = await res.json()
+		if (res.ok) {
+			profil = await res.json()
+			if (profil && typeof profil.permissions === 'string') {
+				try {
+					profil.permissions = JSON.parse(profil.permissions)
+				} catch {
+					profil.permissions = []
+				}
+			}
+		}
 	} catch { /* abaikan */ }
+
+	// Fallback untuk profil jika API gagal terhubung
+	if (!profil && locals.user) {
+		const defaultPermissions: Record<string, string[]> = {
+			admin: ['buat_laporan', 'verifikasi_laporan', 'rekap_laporan', 'lihat_statistik', 'kelola_master', 'kelola_pengguna', 'kelola_hak_akses'],
+			petugas: ['buat_laporan', 'lihat_statistik'],
+			kepala_bidang: ['verifikasi_laporan', 'rekap_laporan', 'lihat_statistik'],
+			pimpinan: ['rekap_laporan', 'lihat_statistik']
+		}
+		profil = {
+			namaLengkap: locals.user.namaLengkap,
+			email: locals.user.email,
+			namaRole: locals.user.namaRole,
+			permissions: defaultPermissions[locals.user.namaRole] || []
+		}
+	}
 
 	return { user: locals.user, pendingCount, revisiCount, notifikasi, unreadNotif, profil, backendUrl: env.BACKEND_URL || 'http://localhost:3000' }
 }

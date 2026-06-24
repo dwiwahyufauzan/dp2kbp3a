@@ -4,18 +4,20 @@ import { db } from '../../db/connection'
 import { users, roles, bidang, lokasiTugas } from '../../db/schema'
 import { authPlugin } from '../../plugins/auth'
 import type { UserPayload } from '../../types'
+import { hasPermission } from '../../utils/permission'
 
 export const adminPenggunaRoutes = new Elysia({ prefix: '/admin/pengguna' })
   .use(authPlugin)
-  .onBeforeHandle((ctx) => {
+  .onBeforeHandle(async (ctx) => {
     const user = (ctx as unknown as { user: UserPayload | null }).user
     if (!user) {
       ctx.set.status = 401
       return { message: 'Tidak terautentikasi' }
     }
-    if (user.namaRole !== 'admin') {
+    const allowed = await hasPermission(user.namaRole, 'kelola_pengguna')
+    if (!allowed) {
       ctx.set.status = 403
-      return { message: 'Hanya admin yang dapat mengakses' }
+      return { message: 'Akses ditolak: Anda tidak memiliki izin kelola_pengguna' }
     }
   })
 

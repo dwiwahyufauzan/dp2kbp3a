@@ -1,5 +1,5 @@
 import { Elysia, t } from 'elysia'
-import { eq, desc, count, and, like, SQL, isNull } from 'drizzle-orm'
+import { eq, desc, count, and, or, like, SQL, isNull } from 'drizzle-orm'
 import { join } from 'node:path'
 import { mkdir, unlink } from 'node:fs/promises'
 import { db } from '../db/connection'
@@ -98,7 +98,14 @@ export const laporanRoutes = new Elysia({ prefix: '/laporan' })
       conditions.push(eq(laporanKegiatan.statusVerifikasi, status as 'Pending' | 'Disetujui' | 'Ditolak' | 'Revisi'))
     }
     if (search) {
-      conditions.push(like(laporanKegiatan.lokasiDetail, `%${search}%`))
+      conditions.push(
+        or(
+          like(laporanKegiatan.lokasiDetail, `%${search}%`),
+          like(laporanKegiatan.deskripsiKegiatan, `%${search}%`),
+          like(jenisKegiatan.namaKegiatan, `%${search}%`),
+          like(users.namaLengkap, `%${search}%`)
+        ) as SQL
+      )
     }
     if (idBidang) {
       conditions.push(eq(laporanKegiatan.idBidang, idBidang))
@@ -129,6 +136,7 @@ export const laporanRoutes = new Elysia({ prefix: '/laporan' })
       db
         .select({ total: count() })
         .from(laporanKegiatan)
+        .leftJoin(users, eq(laporanKegiatan.idUser, users.idUser))
         .leftJoin(jenisKegiatan, eq(laporanKegiatan.idJenis, jenisKegiatan.idJenis))
         .leftJoin(bidang, eq(laporanKegiatan.idBidang, bidang.idBidang))
         .where(where),

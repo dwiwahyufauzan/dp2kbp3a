@@ -1,4 +1,4 @@
-﻿<script lang="ts">
+<script lang="ts">
     import StatusBadge from "$lib/components/StatusBadge.svelte";
     import type { PageData } from "./$types";
     import type { LaporanItem } from "$lib/types";
@@ -92,9 +92,8 @@
         </div>
     </header>
 
-    <!-- KPI CARDS (non-petugas) -->
-    {#if data.role !== "petugas"}
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-8 py-4">
+    <!-- KPI CARDS -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-8 py-4">
             <!-- Total Laporan -->
             <div class="space-y-1">
                 <div class="flex items-center gap-2 mb-2">
@@ -264,49 +263,83 @@
                                 >Semua Laporan</span
                             >
                         </a>
-                        <a
-                            href="/laporan?status=Pending"
-                            class="group flex items-center justify-between p-3 rounded-xl hover:bg-amber-50 border border-transparent hover:border-amber-200 transition-all"
-                        >
-                            <div class="flex items-center gap-3">
+
+                        {#if data.role === 'petugas'}
+                            <a
+                                href="/laporan/buat"
+                                class="group flex items-center gap-3 p-3 rounded-xl hover:bg-zinc-50 border border-transparent hover:border-zinc-200 transition-all"
+                            >
+                                <div
+                                    class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform"
+                                >
+                                    <Plus class="w-4 h-4" />
+                                </div>
+                                <span class="text-sm font-semibold text-zinc-700"
+                                    >Input Kegiatan Baru</span
+                                >
+                            </a>
+                            <a
+                                href="/revisi"
+                                class="group flex items-center gap-3 p-3 rounded-xl hover:bg-zinc-50 border border-transparent hover:border-zinc-200 transition-all"
+                            >
                                 <div
                                     class="w-8 h-8 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform"
                                 >
-                                    <Activity class="w-4 h-4" />
+                                    <Clock class="w-4 h-4" />
                                 </div>
-                                <span
-                                    class="text-sm font-semibold text-amber-900"
-                                    >Verifikasi Laporan</span
+                                <span class="text-sm font-semibold text-zinc-700"
+                                    >Riwayat Revisian</span
                                 >
-                            </div>
-                            {#if (data.byStatus?.Pending ?? 0) > 0}
-                                <span
-                                    class="text-[10px] font-bold bg-amber-500 text-white px-2 py-1 rounded-full"
-                                    >{data.byStatus?.Pending}</span
+                            </a>
+                        {/if}
+
+                        {#if data.role === 'admin' || data.role === 'kepala_bidang'}
+                            <a
+                                href="/verifikasi"
+                                class="group flex items-center justify-between p-3 rounded-xl hover:bg-amber-50 border border-transparent hover:border-amber-200 transition-all"
+                            >
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-8 h-8 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform"
+                                    >
+                                        <Activity class="w-4 h-4" />
+                                    </div>
+                                    <span
+                                        class="text-sm font-semibold text-amber-900"
+                                        >Verifikasi Laporan</span
+                                    >
+                                </div>
+                                {#if (data.byStatus?.Pending ?? 0) > 0}
+                                    <span
+                                        class="text-[10px] font-bold bg-amber-500 text-white px-2 py-1 rounded-full"
+                                        >{data.byStatus?.Pending}</span
+                                    >
+                                {/if}
+                            </a>
+                        {/if}
+
+                        {#if data.role === 'admin' || data.role === 'kepala_bidang' || data.role === 'pimpinan'}
+                            <a
+                                href="/rekap"
+                                class="group flex items-center gap-3 p-3 rounded-xl hover:bg-zinc-50 border border-transparent hover:border-zinc-200 transition-all"
+                            >
+                                <div
+                                    class="w-8 h-8 rounded-lg bg-zinc-100 text-zinc-600 flex items-center justify-center group-hover:scale-110 transition-transform"
                                 >
-                            {/if}
-                        </a>
-                        <a
-                            href="/rekap"
-                            class="group flex items-center gap-3 p-3 rounded-xl hover:bg-zinc-50 border border-transparent hover:border-zinc-200 transition-all"
-                        >
-                            <div
-                                class="w-8 h-8 rounded-lg bg-zinc-100 text-zinc-600 flex items-center justify-center group-hover:scale-110 transition-transform"
-                            >
-                                <FileSpreadsheet class="w-4 h-4" />
-                            </div>
-                            <span class="text-sm font-semibold text-zinc-700"
-                                >Rekap & Statistik</span
-                            >
-                        </a>
+                                    <FileSpreadsheet class="w-4 h-4" />
+                                </div>
+                                <span class="text-sm font-semibold text-zinc-700"
+                                    >Rekap & Statistik</span
+                                >
+                            </a>
+                        {/if}
                     </div>
                 </div>
             </div>
         {/if}
-    {/if}
 
     <!-- GENDER CHART (non-petugas) -->
-    {#if data.role !== "petugas" && (data.stats.totalLaki > 0 || data.stats.totalPerempuan > 0)}
+    {#if data.stats.totalLaki > 0 || data.stats.totalPerempuan > 0}
         <div class="py-4 border-t border-zinc-100">
             <h2
                 class="text-sm font-bold text-zinc-800 uppercase tracking-widest mb-6 flex items-center gap-2"
