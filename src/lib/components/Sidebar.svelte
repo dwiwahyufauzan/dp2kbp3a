@@ -157,6 +157,9 @@
         kepala_bidang: 'Kepala Bidang',
         pimpinan: 'Pimpinan'
     };
+
+    let logoutForm: HTMLFormElement | undefined = $state();
+    let showLogoutConfirm = $state(false);
 </script>
 
 <div class="flex flex-col h-full max-h-screen bg-zinc-950 text-zinc-300 font-sans border-r border-zinc-900 overflow-hidden">
@@ -259,11 +262,9 @@
                 <div class="w-8 h-8 rounded bg-zinc-800 border border-zinc-700 flex items-center justify-center text-xs font-bold text-zinc-300 shrink-0" title={user.namaLengkap}>
                     {initials}
                 </div>
-                <form action="/logout" method="POST">
-                    <button type="submit" class="p-2 text-zinc-500 hover:text-rose-400 transition-colors" title="Logout">
-                        <LogOut class="w-4 h-4" />
-                    </button>
-                </form>
+                <button type="button" onclick={() => showLogoutConfirm = true} class="p-2 text-zinc-500 hover:text-rose-400 transition-colors" title="Logout">
+                    <LogOut class="w-4 h-4" />
+                </button>
             </div>
         {:else}
             <div class="flex items-center gap-3 bg-zinc-900/50 p-3 rounded-xl border border-zinc-800/50">
@@ -274,12 +275,69 @@
                     <p class="text-xs font-bold text-zinc-200 truncate">{user.namaLengkap}</p>
                     <p class="text-[10px] text-zinc-500 truncate mt-0.5">{roleLabels[role] ?? role}</p>
                 </div>
-                <form action="/logout" method="POST">
-                    <button type="submit" aria-label="Logout" class="p-2 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors">
-                        <LogOut class="w-4 h-4" />
-                    </button>
-                </form>
+                <button type="button" onclick={() => showLogoutConfirm = true} aria-label="Logout" class="p-2 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors">
+                    <LogOut class="w-4 h-4" />
+                </button>
             </div>
         {/if}
     </div>
 </div>
+
+<form bind:this={logoutForm} action="/logout" method="POST" class="hidden"></form>
+
+{#if showLogoutConfirm}
+    <!-- svelte-ignore a11y_click_outside_not_interactive -->
+    <div
+        class="fixed inset-0 backdrop-blur-sm bg-zinc-900/60 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-150"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="logout-title"
+    >
+        <!-- Backdrop click to cancel -->
+        <button
+            class="absolute inset-0 w-full h-full cursor-default bg-transparent border-none"
+            onclick={() => showLogoutConfirm = false}
+            aria-label="Tutup"
+            tabindex="-1"
+        ></button>
+
+        <div class="relative bg-white rounded-2xl w-full max-w-sm shadow-2xl border border-zinc-100 overflow-hidden animate-in zoom-in-95 duration-150">
+            <!-- Header strip -->
+            <div class="h-1 w-full bg-gradient-to-r from-amber-500 to-rose-500"></div>
+
+            <div class="p-6">
+                <div class="flex items-start gap-4 mb-6">
+                    <!-- Icon -->
+                    <div class="shrink-0 w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center">
+                        <LogOut class="w-5 h-5 text-amber-500" />
+                    </div>
+                    <div>
+                        <p id="logout-title" class="text-[10px] font-black uppercase tracking-widest text-amber-600 mb-1">Konfirmasi Keluar</p>
+                        <p class="text-sm font-semibold text-zinc-800 leading-snug">Apakah Anda yakin ingin keluar?</p>
+                        <p class="text-xs text-zinc-400 mt-1">Anda harus login kembali untuk mengakses halaman ini.</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button
+                        type="button"
+                        onclick={() => showLogoutConfirm = false}
+                        class="flex-1 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-zinc-900 border border-zinc-200 rounded-xl hover:bg-zinc-50 transition-all"
+                    >
+                        Batal
+                    </button>
+                    <button
+                        type="button"
+                        onclick={() => {
+                            showLogoutConfirm = false;
+                            logoutForm?.submit();
+                        }}
+                        class="flex-1 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold uppercase tracking-widest rounded-xl shadow-md shadow-rose-100 transition-all"
+                    >
+                        Keluar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+{/if}

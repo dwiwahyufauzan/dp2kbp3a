@@ -27,6 +27,10 @@
     let selectedId = $state<string | null>(null);
     let confirmOpen = $state(false);
     let confirmMsg = $state('');
+    let confirmType = $state<'danger' | 'warning' | 'success' | 'info'>('danger');
+    let confirmTitle = $state('');
+    let confirmLabel = $state('');
+    let pendingStatus = $state<string>('');
     let pendingFormEl = $state<HTMLFormElement | null>(null);
 
     const selected = $derived(antrian.find(a => a.idLaporan === selectedId) ?? null);
@@ -255,26 +259,64 @@
 
                             <div class="grid grid-cols-3 gap-3">
                                 <button
-                                    name="statusVerifikasi" value="Disetujui" type="submit"
+                                    type="button"
                                     disabled={loading}
-                                    class="flex flex-col items-center justify-center gap-1.5 px-4 py-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-zinc-300 text-white text-sm font-bold rounded-xl transition-all shadow-sm"
+                                    onclick={(e) => {
+                                        pendingFormEl = (e.currentTarget as HTMLElement).closest('form');
+                                        pendingStatus = 'Disetujui';
+                                        confirmMsg = `Apakah Anda yakin ingin menyetujui laporan "${selected.namaKegiatan}"?`;
+                                        confirmType = 'success';
+                                        confirmTitle = 'Konfirmasi Setujui';
+                                        confirmLabel = 'Ya, Setujui';
+                                        confirmOpen = true;
+                                    }}
+                                    class="flex flex-col items-center justify-center gap-1.5 px-4 py-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-zinc-300 text-white text-sm font-bold rounded-xl transition-all shadow-sm cursor-pointer"
                                 >
                                     <CheckCircle2 class="w-5 h-5" />
                                     <span class="text-xs">Setujui</span>
                                 </button>
                                 <button
-                                    name="statusVerifikasi" value="Revisi" type="submit"
+                                    type="button"
                                     disabled={loading}
-                                    class="flex flex-col items-center justify-center gap-1.5 px-4 py-4 bg-amber-500 hover:bg-amber-600 disabled:bg-zinc-300 text-white text-sm font-bold rounded-xl transition-all shadow-sm"
+                                    onclick={(e) => {
+                                        const form = (e.currentTarget as HTMLElement).closest('form');
+                                        const catatan = form?.querySelector('textarea')?.value?.trim();
+                                        if (!catatan) {
+                                            toasts.error('Catatan verifikator wajib diisi untuk meminta revisi.');
+                                            return;
+                                        }
+                                        pendingFormEl = form;
+                                        pendingStatus = 'Revisi';
+                                        confirmMsg = `Apakah Anda yakin ingin meminta revisi untuk laporan "${selected.namaKegiatan}"?`;
+                                        confirmType = 'warning';
+                                        confirmTitle = 'Konfirmasi Minta Revisi';
+                                        confirmLabel = 'Ya, Revisi';
+                                        confirmOpen = true;
+                                    }}
+                                    class="flex flex-col items-center justify-center gap-1.5 px-4 py-4 bg-amber-500 hover:bg-amber-600 disabled:bg-zinc-300 text-white text-sm font-bold rounded-xl transition-all shadow-sm cursor-pointer"
                                 >
                                     <RotateCcw class="w-5 h-5" />
                                     <span class="text-xs">Minta Revisi</span>
                                 </button>
                                 <button
-                                    name="statusVerifikasi" value="Ditolak" type="button"
+                                    type="button"
                                     disabled={loading}
-                                    onclick={(e) => { pendingFormEl = (e.currentTarget as HTMLElement).closest('form'); confirmMsg = `Tolak laporan "${selected.namaKegiatan}"?`; confirmOpen = true; }}
-                                    class="flex flex-col items-center justify-center gap-1.5 px-4 py-4 bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 text-sm font-bold rounded-xl transition-all"
+                                    onclick={(e) => {
+                                        const form = (e.currentTarget as HTMLElement).closest('form');
+                                        const catatan = form?.querySelector('textarea')?.value?.trim();
+                                        if (!catatan) {
+                                            toasts.error('Catatan verifikator wajib diisi untuk menolak laporan.');
+                                            return;
+                                        }
+                                        pendingFormEl = form;
+                                        pendingStatus = 'Ditolak';
+                                        confirmMsg = `Apakah Anda yakin ingin menolak laporan "${selected.namaKegiatan}"?`;
+                                        confirmType = 'danger';
+                                        confirmTitle = 'Konfirmasi Tolak';
+                                        confirmLabel = 'Ya, Tolak';
+                                        confirmOpen = true;
+                                    }}
+                                    class="flex flex-col items-center justify-center gap-1.5 px-4 py-4 bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 text-sm font-bold rounded-xl transition-all cursor-pointer"
                                 >
                                     <XCircle class="w-5 h-5" />
                                     <span class="text-xs">Tolak</span>
@@ -301,19 +343,24 @@
 
 <ConfirmDialog
     open={confirmOpen}
-    title="Konfirmasi Tolak"
+    title={confirmTitle}
     message={confirmMsg}
-    confirmLabel="Ya, Tolak Laporan"
+    type={confirmType}
+    confirmLabel={confirmLabel}
     onConfirm={() => {
         confirmOpen = false;
-        if (pendingFormEl) {
+        if (pendingFormEl && pendingStatus) {
             const hidden = document.createElement('input');
             hidden.type = 'hidden';
             hidden.name = 'statusVerifikasi';
-            hidden.value = 'Ditolak';
+            hidden.value = pendingStatus;
             pendingFormEl.appendChild(hidden);
             pendingFormEl.requestSubmit();
         }
     }}
-    onCancel={() => { confirmOpen = false; pendingFormEl = null; }}
+    onCancel={() => {
+        confirmOpen = false;
+        pendingFormEl = null;
+        pendingStatus = '';
+    }}
 />

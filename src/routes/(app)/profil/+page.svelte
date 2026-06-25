@@ -14,12 +14,16 @@
         Shield,
     } from "lucide-svelte";
     import { untrack } from "svelte";
+    import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
 
     let { data, form }: { data: PageData; form: ActionData } = $props();
 
     const profil = $derived(data.profil);
     let loading = $state(false);
     let showPassword = $state(false);
+    let confirmOpen = $state(false);
+    let isConfirmed = false;
+    let formEl = $state<HTMLFormElement | null>(null);
 
     const roleLabels: Record<string, string> = {
         admin: "Administrator",
@@ -148,13 +152,20 @@
                 </div>
 
                 <form
+                    bind:this={formEl}
                     method="POST"
                     action="?/update"
-                    use:enhance={() => {
+                    use:enhance={({ cancel }) => {
+                        if (!isConfirmed) {
+                            cancel();
+                            confirmOpen = true;
+                            return;
+                        }
                         loading = true;
                         return async ({ update }) => {
                             await update();
                             loading = false;
+                            isConfirmed = false;
                         };
                     }}
                     class="p-6 space-y-5"
@@ -254,3 +265,20 @@
         </div>
     </div>
 </div>
+
+<ConfirmDialog
+    open={confirmOpen}
+    title="Konfirmasi Profil"
+    message="Apakah Anda yakin ingin memperbarui profil dan kata sandi Anda?"
+    type="warning"
+    confirmLabel="Ya, Perbarui"
+    onConfirm={() => {
+        confirmOpen = false;
+        isConfirmed = true;
+        formEl?.requestSubmit();
+    }}
+    onCancel={() => {
+        confirmOpen = false;
+        isConfirmed = false;
+    }}
+/>

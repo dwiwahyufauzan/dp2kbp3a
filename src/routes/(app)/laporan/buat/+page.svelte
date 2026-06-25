@@ -4,12 +4,16 @@
     import type { ActionData, PageData } from './$types';
     import { FilePlus2, ChevronLeft, LayoutGrid, Calendar, Users, FileText, Check, Upload, FileArchive, FileSpreadsheet } from 'lucide-svelte';
     import WilayahSelect from '$lib/components/WilayahSelect.svelte';
+    import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 
     let { data, form }: { data: PageData; form: ActionData } = $props();
 
     let loading = $state(false);
     let fileInput = $state<HTMLInputElement | null>(null);
     let selectedFiles = $state<File[]>([]);
+    let confirmOpen = $state(false);
+    let isConfirmed = false;
+    let formEl = $state<HTMLFormElement | null>(null);
 
     // Bidang yang dipilih petugas
     let selectedBidangId = $state<string>(form?.values?.idBidang ?? '');
@@ -82,6 +86,7 @@
     {/if}
 
     <form
+        bind:this={formEl}
         method="POST"
         enctype="multipart/form-data"
         use:enhance={({ formData, cancel }) => {
@@ -104,8 +109,18 @@
                 }
             }
 
+            if (!isConfirmed) {
+                cancel();
+                confirmOpen = true;
+                return;
+            }
+
             loading = true;
-            return async ({ update }) => { await update(); loading = false; };
+            return async ({ update }) => { 
+                await update(); 
+                loading = false; 
+                isConfirmed = false;
+            };
         }}
         class="space-y-6"
     >
@@ -319,3 +334,20 @@
         </div>
     </form>
 </div>
+
+<ConfirmDialog
+    open={confirmOpen}
+    title="Konfirmasi Kirim Laporan"
+    message="Apakah Anda yakin ingin mengirim laporan kegiatan ini? Pastikan data dan dokumentasi sudah lengkap."
+    type="success"
+    confirmLabel="Ya, Kirim"
+    onConfirm={() => {
+        confirmOpen = false;
+        isConfirmed = true;
+        formEl?.requestSubmit();
+    }}
+    onCancel={() => {
+        confirmOpen = false;
+        isConfirmed = false;
+    }}
+/>

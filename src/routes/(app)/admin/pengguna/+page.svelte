@@ -20,6 +20,11 @@
     let filterKecamatan = $state('');
     let confirmOpen = $state(false);
     let confirmMsg = $state('');
+    let confirmType = $state<'danger' | 'warning' | 'success' | 'info'>('danger');
+    let confirmTitle = $state('');
+    let confirmLabel = $state('');
+    let isConfirmed = false;
+    let modalFormEl = $state<HTMLFormElement | null>(null);
     let pendingForm = $state<HTMLFormElement | null>(null);
     let showPassword = $state(false);
 
@@ -266,7 +271,7 @@
                                     <button onclick={() => (editItem = p)} class="px-3 py-1.5 text-xs font-bold border border-zinc-200 bg-white text-zinc-600 rounded-lg hover:bg-zinc-100 transition-all">Edit</button>
                                     <form method="POST" action="?/delete" use:enhance={() => { return async ({ update }) => { await update() } }}>
                                         <input type="hidden" name="id" value={p.idUser} />
-                                        <button type="button" onclick={(e) => { pendingForm = (e.currentTarget as HTMLElement).closest('form'); confirmMsg = `Hapus pengguna "${p.namaLengkap}"?`; confirmOpen = true; }} class="px-3 py-1.5 text-xs font-bold border border-rose-200 bg-white text-rose-600 rounded-lg hover:bg-rose-50 transition-all">Hapus</button>
+                                        <button type="button" onclick={(e) => { pendingForm = (e.currentTarget as HTMLElement).closest('form'); confirmMsg = `Hapus pengguna "${p.namaLengkap}"?`; confirmType = 'danger'; confirmTitle = 'Konfirmasi Hapus'; confirmLabel = 'Ya, Hapus'; confirmOpen = true; }} class="px-3 py-1.5 text-xs font-bold border border-rose-200 bg-white text-rose-600 rounded-lg hover:bg-rose-50 transition-all">Hapus</button>
                                     </form>
                                 </div>
                             </td>
@@ -292,11 +297,26 @@
                 </div>
                 <!-- Combined Form Logic -->
                 <form
+                    bind:this={modalFormEl}
                     method="POST"
                     action={showCreate ? '?/create' : '?/update'}
-                    use:enhance={() => {
+                    use:enhance={({ cancel }) => {
+                        if (!isConfirmed) {
+                            cancel();
+                            pendingForm = modalFormEl;
+                            confirmMsg = showCreate ? 'Apakah Anda yakin ingin menambahkan pengguna baru?' : `Apakah Anda yakin ingin menyimpan perubahan pengguna "${editItem?.namaLengkap}"?`;
+                            confirmType = showCreate ? 'success' : 'warning';
+                            confirmTitle = showCreate ? 'Konfirmasi Tambah' : 'Konfirmasi Ubah';
+                            confirmLabel = showCreate ? 'Ya, Tambah' : 'Ya, Simpan';
+                            confirmOpen = true;
+                            return;
+                        }
                         loading = true;
-                        return async ({ update }) => { await update(); loading = false; };
+                        return async ({ update }) => {
+                            await update();
+                            loading = false;
+                            isConfirmed = false;
+                        };
                     }}
                     class="p-6 space-y-4"
                 >
@@ -395,7 +415,18 @@
 
 <ConfirmDialog
     open={confirmOpen}
+    title={confirmTitle}
     message={confirmMsg}
-    onConfirm={() => { confirmOpen = false; pendingForm?.requestSubmit(); }}
-    onCancel={() => { confirmOpen = false; pendingForm = null; }}
+    type={confirmType}
+    confirmLabel={confirmLabel}
+    onConfirm={() => {
+        confirmOpen = false;
+        isConfirmed = true;
+        pendingForm?.requestSubmit();
+    }}
+    onCancel={() => {
+        confirmOpen = false;
+        pendingForm = null;
+        isConfirmed = false;
+    }}
 />

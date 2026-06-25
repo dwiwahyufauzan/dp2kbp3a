@@ -38,6 +38,13 @@
     let verifikasiLoading = $state(false);
     let uploadLoading = $state(false);
     let confirmOpen = $state(false);
+    let confirmMsg = $state('');
+    let confirmType = $state<'danger' | 'warning' | 'success' | 'info'>('danger');
+    let confirmTitle = $state('');
+    let confirmLabel = $state('');
+    let isConfirmed = false;
+    let pendingStatus = $state('');
+    let editFormEl = $state<HTMLFormElement | null>(null);
     let pendingForm = $state<HTMLFormElement | null>(null);
     let selectedFileName = $state<string | null>(null);
     let showRiwayat = $state(false);
@@ -249,7 +256,7 @@
                 <form method="POST" action="?/hapusLaporan" use:enhance={() => { return async ({ update }) => { await update() } }}>
                     <button
                         type="button"
-                        onclick={(e) => { pendingForm = (e.currentTarget as HTMLElement).closest('form'); confirmOpen = true; }}
+                        onclick={(e) => { pendingForm = (e.currentTarget as HTMLElement).closest('form'); confirmMsg = `Apakah Anda yakin ingin menghapus laporan "${laporan.namaKegiatan}"?`; confirmType = 'danger'; confirmTitle = 'Konfirmasi Hapus Laporan'; confirmLabel = 'Ya, Hapus'; confirmOpen = true; }}
                         class="p-2.5 bg-white border border-zinc-200 text-zinc-400 rounded-xl hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all"
                         aria-label="Hapus Laporan"
                     >
@@ -275,6 +282,7 @@
                 </div>
                 
                 <form
+                    bind:this={editFormEl}
                     method="POST"
                     action="?/edit"
                     use:enhance={({ formData, cancel }) => {
@@ -297,11 +305,23 @@
                             }
                         }
 
+                        if (!isConfirmed) {
+                            cancel();
+                            pendingForm = editFormEl;
+                            confirmMsg = 'Apakah Anda yakin ingin menyimpan perubahan/revisi laporan kegiatan ini?';
+                            confirmType = 'warning';
+                            confirmTitle = 'Konfirmasi Simpan Revisi';
+                            confirmLabel = 'Ya, Simpan';
+                            confirmOpen = true;
+                            return;
+                        }
+
                         editLoading = true;
                         return async ({ update }) => {
                             await update({ reset: false });
                             editLoading = false;
                             editMode = false;
+                            isConfirmed = false;
                         };
                     }}
                     class="space-y-6"
@@ -496,24 +516,57 @@
 
                 <div class="flex flex-col sm:flex-row gap-3">
                     <button
-                        name="statusVerifikasi"
-                        value="Disetujui"
-                        type="submit"
-                        class="flex-1 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
+                        type="button"
+                        onclick={(e) => {
+                            pendingForm = (e.currentTarget as HTMLElement).closest('form');
+                            confirmMsg = 'Apakah Anda yakin ingin menyetujui laporan kegiatan ini?';
+                            confirmType = 'success';
+                            confirmTitle = 'Konfirmasi Setujui Laporan';
+                            confirmLabel = 'Ya, Setujui';
+                            pendingStatus = 'Disetujui';
+                            confirmOpen = true;
+                        }}
+                        class="flex-1 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer"
                     ><CheckCircle2 class="w-4 h-4"/> Setujui Laporan</button>
                     
                     <button
-                        name="statusVerifikasi"
-                        value="Revisi"
-                        type="submit"
-                        class="flex-1 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
+                        type="button"
+                        onclick={(e) => {
+                            const form = (e.currentTarget as HTMLElement).closest('form');
+                            const catatan = form?.querySelector('textarea')?.value?.trim();
+                            if (!catatan) {
+                                toasts.error('Catatan verifikator wajib diisi untuk meminta revisi.');
+                                return;
+                            }
+                            pendingForm = form;
+                            confirmMsg = 'Apakah Anda yakin ingin meminta revisi untuk laporan kegiatan ini?';
+                            confirmType = 'warning';
+                            confirmTitle = 'Konfirmasi Minta Revisi';
+                            confirmLabel = 'Ya, Minta Revisi';
+                            pendingStatus = 'Revisi';
+                            confirmOpen = true;
+                        }}
+                        class="flex-1 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer"
                     ><Edit2 class="w-4 h-4"/> Minta Revisi</button>
                     
                     <button
-                        name="statusVerifikasi"
-                        value="Ditolak"
-                        type="submit"
-                        class="flex-1 px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
+                        type="button"
+                        onclick={(e) => {
+                            const form = (e.currentTarget as HTMLElement).closest('form');
+                            const catatan = form?.querySelector('textarea')?.value?.trim();
+                            if (!catatan) {
+                                toasts.error('Catatan verifikator wajib diisi untuk menolak laporan.');
+                                return;
+                            }
+                            pendingForm = form;
+                            confirmMsg = 'Apakah Anda yakin ingin menolak laporan kegiatan ini?';
+                            confirmType = 'danger';
+                            confirmTitle = 'Konfirmasi Tolak Laporan';
+                            confirmLabel = 'Ya, Tolak';
+                            pendingStatus = 'Ditolak';
+                            confirmOpen = true;
+                        }}
+                        class="flex-1 px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer"
                     ><FileX2 class="w-4 h-4"/> Tolak Laporan</button>
                 </div>
             </form>
@@ -590,7 +643,7 @@
                                 <input type="hidden" name="idDok" value={dok.idDokumentasi} />
                                 <button
                                     type="button"
-                                    onclick={(e) => { pendingForm = (e.currentTarget as HTMLElement).closest('form'); confirmOpen = true; }}
+                                    onclick={(e) => { pendingForm = (e.currentTarget as HTMLElement).closest('form'); confirmMsg = 'Apakah Anda yakin ingin menghapus berkas dokumentasi ini?'; confirmType = 'danger'; confirmTitle = 'Konfirmasi Hapus Dokumentasi'; confirmLabel = 'Ya, Hapus'; confirmOpen = true; }}
                                     class="w-6 h-6 bg-rose-500 hover:bg-rose-600 text-white rounded-lg flex items-center justify-center shadow-md transition-colors"
                                     aria-label="Hapus dokumen"
                                 >
@@ -745,7 +798,29 @@
 
 <ConfirmDialog
     open={confirmOpen}
-    message="Apakah Anda yakin ingin menghapus?"
-    onConfirm={() => { confirmOpen = false; pendingForm?.requestSubmit(); }}
-    onCancel={() => { confirmOpen = false; pendingForm = null; }}
+    title={confirmTitle}
+    message={confirmMsg}
+    type={confirmType}
+    confirmLabel={confirmLabel}
+    onConfirm={() => {
+        confirmOpen = false;
+        isConfirmed = true;
+        if (pendingForm && pendingStatus) {
+            const hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = 'statusVerifikasi';
+            hidden.value = pendingStatus;
+            pendingForm.appendChild(hidden);
+            pendingForm.requestSubmit();
+            pendingStatus = '';
+        } else {
+            pendingForm?.requestSubmit();
+        }
+    }}
+    onCancel={() => {
+        confirmOpen = false;
+        pendingForm = null;
+        isConfirmed = false;
+        pendingStatus = '';
+    }}
 />

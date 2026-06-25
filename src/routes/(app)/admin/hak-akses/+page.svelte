@@ -15,6 +15,7 @@
         Check,
         HelpCircle,
     } from "lucide-svelte";
+    import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
 
     let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -136,6 +137,9 @@
 
     let successMessage = $state("");
     let errorMessage = $state("");
+    let confirmOpen = $state(false);
+    let isConfirmed = false;
+    let formEl = $state<HTMLFormElement | null>(null);
 
     $effect(() => {
         if (form?.success) {
@@ -291,13 +295,20 @@
                     </div>
 
                     <form
+                        bind:this={formEl}
                         method="POST"
                         action="?/updatePermissions"
-                        use:enhance={() => {
+                        use:enhance={({ cancel }) => {
+                            if (!isConfirmed) {
+                                cancel();
+                                confirmOpen = true;
+                                return;
+                            }
                             loading = true;
                             return async ({ update }) => {
                                 await update();
                                 loading = false;
+                                isConfirmed = false;
                             };
                         }}
                         class="p-6 sm:p-8"
@@ -423,3 +434,22 @@
         </div>
     </div>
 </div>
+
+{#if selectedRole}
+    <ConfirmDialog
+        open={confirmOpen}
+        title="Konfirmasi Hak Akses"
+        message={`Simpan perubahan hak akses untuk peran ${roleLabels[selectedRole.namaRole] ?? selectedRole.namaRole}?`}
+        type="warning"
+        confirmLabel="Ya, Simpan"
+        onConfirm={() => {
+            confirmOpen = false;
+            isConfirmed = true;
+            formEl?.requestSubmit();
+        }}
+        onCancel={() => {
+            confirmOpen = false;
+            isConfirmed = false;
+        }}
+    />
+{/if}
