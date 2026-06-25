@@ -50,10 +50,15 @@ export const actions: Actions = {
 		const deskripsiKegiatan = form.get('deskripsiKegiatan') as string
 		const files = form.getAll('berkas') as File[]
 
+		const validFiles = files.filter(f => f && f.size > 0)
 		const values = { idBidang, tanggalKegiatan, idJenis, lokasiDetail, jumlahPeserta, deskripsiKegiatan }
 
 		if (!idBidang || !tanggalKegiatan || !idJenis || !lokasiDetail || !jumlahPeserta || !deskripsiKegiatan) {
 			return fail(400, { error: 'Semua kolom wajib diisi', values })
+		}
+
+		if (validFiles.length === 0) {
+			return fail(400, { error: 'Dokumentasi/foto kegiatan wajib diunggah minimal 1 file', values })
 		}
 
 		const payload: Record<string, unknown> = {
@@ -76,7 +81,6 @@ export const actions: Actions = {
 		const created = await res.json() as { idLaporan: string }
 
 		// Upload dokumentasi
-		const validFiles = files.filter(f => f && f.size > 0)
 		for (const file of validFiles.slice(0, 10)) {
 			const fd = new FormData()
 			fd.append('file', file)

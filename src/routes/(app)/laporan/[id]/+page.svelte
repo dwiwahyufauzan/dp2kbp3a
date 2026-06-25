@@ -118,7 +118,11 @@
         if (!riwayat.dataLama) return [];
         
         let stateAfter: Record<string, any> = {};
-        if (idx === 0) {
+        const newerEdits = (laporan.riwayatRevisi ?? [])
+            .slice(0, idx)
+            .filter(r => r.tipeAksi === 'edit');
+
+        if (newerEdits.length === 0) {
             stateAfter = {
                 idBidang: laporan.idBidang,
                 idJenis: laporan.idJenis,
@@ -130,8 +134,8 @@
                 deskripsiKegiatan: laporan.deskripsiKegiatan
             };
         } else {
-            const nextNewer = laporan.riwayatRevisi ? laporan.riwayatRevisi[idx - 1] : null;
-            stateAfter = nextNewer?.dataLama ?? {};
+            const nextNewerEdit = newerEdits[newerEdits.length - 1];
+            stateAfter = nextNewerEdit.dataLama ?? {};
         }
 
         const dataLama = riwayat.dataLama;

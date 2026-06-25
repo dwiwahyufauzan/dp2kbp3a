@@ -100,13 +100,6 @@
             permission: 'kelola_master'
         },
         {
-            href: '/admin/lokasi-tugas',
-            label: 'Lokasi Tugas',
-            icon: Grid2X2,
-            roles: ['admin', 'petugas', 'kepala_bidang', 'pimpinan'],
-            permission: 'kelola_master'
-        },
-        {
             href: '/admin/hak-akses',
             label: 'Hak Akses',
             icon: ShieldCheck,

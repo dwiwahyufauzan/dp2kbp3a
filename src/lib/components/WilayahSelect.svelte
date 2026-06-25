@@ -120,6 +120,7 @@
 			onchange={onKecamatanChange}
 			class={inputClass}
 			disabled={loadingKec}
+			required={required}
 			aria-label="Pilih Kecamatan"
 		>
 			<option value="">{loadingKec ? 'Memuat kecamatan...' : '-- Pilih Kecamatan --'}</option>
@@ -139,6 +140,7 @@
 			onchange={onDesaChange}
 			class={inputClass}
 			disabled={!selKecamatan || loadingDesa}
+			required={required}
 			aria-label="Pilih Desa"
 		>
 			<option value="">

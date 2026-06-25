@@ -4,7 +4,7 @@
     import Toast from '$lib/components/Toast.svelte';
     import { fade } from 'svelte/transition';
     import type { LayoutData } from './$types';
-    import { Search, Bell, Menu, PanelLeftClose, PanelLeft, Zap, X } from 'lucide-svelte';
+    import { Bell, Menu, PanelLeftClose, PanelLeft, Zap } from 'lucide-svelte';
     import { onMount } from 'svelte';
     import { toasts } from '$lib/stores/toasts.svelte';
 
@@ -12,7 +12,6 @@
 
     let sidebarOpen = $state(false);
     let sidebarCollapsed = $state(false);
-    let searchQuery = $state('');
     let showNotif = $state(false);
 
     // Reactive states for notifications
@@ -80,12 +79,7 @@
         return r ?? '';
     });
 
-    function handleSearch(e: KeyboardEvent) {
-        if (e.key === 'Enter' && searchQuery.trim()) {
-            goto(`/laporan?search=${encodeURIComponent(searchQuery.trim())}`);
-            searchQuery = '';
-        }
-    }
+
 
     async function markRead(idNotif: string, href: string) {
         showNotif = false;
@@ -144,26 +138,7 @@
                     {/if}
                 </button>
 
-                <div class="hidden md:flex items-center bg-zinc-50 rounded-xl px-3.5 py-2 w-64 lg:w-80 focus-within:ring-1 focus-within:ring-zinc-900 focus-within:bg-white transition-all border border-zinc-200/50">
-                    <Search class="w-4 h-4 text-zinc-400 shrink-0" />
-                    <input 
-                        type="text" 
-                        bind:value={searchQuery}
-                        onkeydown={handleSearch}
-                        placeholder="Cari data laporan..." 
-                        class="bg-transparent border-none outline-none text-sm font-medium text-zinc-800 ml-2.5 w-full placeholder:text-zinc-400" 
-                    />
-                    {#if searchQuery}
-                        <button
-                            type="button"
-                            onclick={() => searchQuery = ''}
-                            class="shrink-0 ml-1 text-zinc-400 hover:text-zinc-700 transition-colors"
-                            aria-label="Hapus pencarian"
-                        >
-                            <X class="w-3.5 h-3.5" />
-                        </button>
-                    {/if}
-                </div>
+
             </div>
 
             <div class="flex items-center gap-3">

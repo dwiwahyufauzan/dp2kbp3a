@@ -11,7 +11,7 @@
 
     let searchInput = $state(data.search ?? '');
     let statusFilter = $state(data.status ?? '');
-    let idBidangFilter = $state(data.idBidang ?? '');
+    let idBidangFilter = $state(data.user?.namaRole === 'kepala_bidang' ? (data.user?.idBidang ?? '') : (data.idBidang ?? ''));
     let idJenisFilter = $state(data.idJenis ?? '');
 
     const filteredKegiatanOptions = $derived.by(() => {
@@ -42,7 +42,7 @@
     function resetFilter() {
         searchInput = '';
         statusFilter = '';
-        idBidangFilter = '';
+        idBidangFilter = data.user?.namaRole === 'kepala_bidang' ? (data.user?.idBidang ?? '') : '';
         idJenisFilter = '';
         goto('/laporan');
     }
@@ -126,15 +126,17 @@
         </div>
 
         <div class="flex flex-col sm:flex-row gap-3">
-            <select
-                bind:value={idBidangFilter}
-                class="flex-1 px-4 py-2.5 bg-zinc-50/50 border border-zinc-200 rounded-xl text-sm font-medium text-zinc-700 outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all cursor-pointer"
-            >
-                <option value="">-- Semua Bidang --</option>
-                {#each (data.bidangList ?? []) as b}
-                    <option value={b.idBidang}>{b.namaBidang}</option>
-                {/each}
-            </select>
+            {#if data.user?.namaRole !== 'kepala_bidang'}
+                <select
+                    bind:value={idBidangFilter}
+                    class="flex-1 px-4 py-2.5 bg-zinc-50/50 border border-zinc-200 rounded-xl text-sm font-medium text-zinc-700 outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all cursor-pointer"
+                >
+                    <option value="">-- Semua Bidang --</option>
+                    {#each (data.bidangList ?? []) as b}
+                        <option value={b.idBidang}>{b.namaBidang}</option>
+                    {/each}
+                </select>
+            {/if}
             <select
                 bind:value={idJenisFilter}
                 disabled={!!idBidangFilter && filteredKegiatanOptions.length === 0}

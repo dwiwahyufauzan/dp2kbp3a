@@ -3,6 +3,7 @@
     import { toasts } from '$lib/stores/toasts.svelte';
     import type { ActionData, PageData } from './$types';
     import { FilePlus2, ChevronLeft, LayoutGrid, Calendar, Users, FileText, Check, Upload, FileArchive, FileSpreadsheet } from 'lucide-svelte';
+    import WilayahSelect from '$lib/components/WilayahSelect.svelte';
 
     let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -186,18 +187,10 @@
 
         <!-- LOKASI -->
         <div>
-            <label for="lokasiDetail" class="flex items-center gap-2 text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">
+            <label class="flex items-center gap-2 text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">
                 Lokasi Kegiatan <span class="text-rose-500">*</span>
             </label>
-            <input
-                id="lokasiDetail"
-                name="lokasiDetail"
-                type="text"
-                required
-                value={form?.values?.lokasiDetail ?? ''}
-                placeholder="Contoh: Aula Balai Desa Sukamaju, Kecamatan Cikaret"
-                class="w-full px-4 py-2.5 bg-zinc-50/50 border border-zinc-200 rounded-xl text-sm font-semibold text-zinc-800 outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all"
-            />
+            <WilayahSelect mode="laporan" required={true} fieldName="lokasiDetail" />
         </div>
 
         <!-- JUMLAH PESERTA -->
@@ -257,7 +250,7 @@
         <!-- DOKUMENTASI -->
         <div class="pt-6 border-t border-zinc-100">
             <h3 class="flex items-center gap-2 text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">
-                <Upload class="w-3 h-3" /> Dokumentasi (Opsional)
+                <Upload class="w-3 h-3" /> Dokumentasi (Wajib) <span class="text-rose-500">*</span>
             </h3>
             <p class="text-[10px] text-zinc-400 mb-4">Maks. 10 file. Format: Gambar, PDF, ZIP, Word (.docx), Excel (.xlsx). Ukuran maks. 20 MB/file.</p>
 
@@ -267,6 +260,7 @@
                     name="berkas"
                     id="berkasInput"
                     multiple
+                    required
                     accept={FILE_ACCEPT}
                     bind:this={fileInput}
                     onchange={onFileChange}
@@ -317,7 +311,7 @@
             <a href="/laporan" class="px-5 py-2.5 text-xs font-bold text-zinc-500 uppercase tracking-widest hover:text-zinc-900 transition-colors">Batal</a>
             <button
                 type="submit"
-                disabled={loading || !selectedBidangId}
+                disabled={loading || !selectedBidangId || selectedFiles.length === 0}
                 class="px-8 py-2.5 bg-zinc-900 hover:bg-zinc-800 disabled:bg-zinc-300 text-white text-sm font-bold rounded-xl shadow-md transition-all flex items-center gap-2"
             >
                 {#if loading}Harap Tunggu...{:else}<Check class="w-4 h-4" /> Kirim Laporan{/if}
